@@ -290,63 +290,166 @@
         let tournamentMatches = [];
         let teamStats = {};
 
-        // Fallback 2026 World Cup data
+        // ACTUAL 2026 FIFA World Cup confirmed groups and matches
         const FALLBACK_MATCHES = [
-            // Group Stage Matches
-            { id: 1, home: 'Argentina', away: 'Paraguay', stage: 'Group A', date: '2026-06-12' },
-            { id: 2, home: 'Argentina', away: 'Peru', stage: 'Group A', date: '2026-06-17' },
-            { id: 3, home: 'Argentina', away: 'Canada', stage: 'Group A', date: '2026-06-22' },
-            { id: 4, home: 'Brazil', away: 'Mexico', stage: 'Group B', date: '2026-06-12' },
-            { id: 5, home: 'Brazil', away: 'France', stage: 'Group B', date: '2026-06-17' },
-            { id: 6, home: 'Brazil', away: 'Poland', stage: 'Group B', date: '2026-06-22' },
-            { id: 7, home: 'England', away: 'Serbia', stage: 'Group C', date: '2026-06-12' },
-            { id: 8, home: 'England', away: 'Germany', stage: 'Group C', date: '2026-06-17' },
-            { id: 9, home: 'England', away: 'Spain', stage: 'Group C', date: '2026-06-22' },
-            { id: 10, home: 'Netherlands', away: 'Portugal', stage: 'Group D', date: '2026-06-12' },
-            { id: 11, home: 'Netherlands', away: 'Ukraine', stage: 'Group D', date: '2026-06-17' },
-            { id: 12, home: 'Netherlands', away: 'Italy', stage: 'Group D', date: '2026-06-22' },
-            { id: 13, home: 'Belgium', away: 'Canada', stage: 'Group E', date: '2026-06-13' },
-            { id: 14, home: 'Belgium', away: 'Romania', stage: 'Group E', date: '2026-06-18' },
-            { id: 15, home: 'Belgium', away: 'Croatia', stage: 'Group E', date: '2026-06-23' },
-            { id: 16, home: 'France', away: 'Denmark', stage: 'Group F', date: '2026-06-13' },
-            { id: 17, home: 'France', away: 'Slovakia', stage: 'Group F', date: '2026-06-18' },
-            { id: 18, home: 'France', away: 'Austria', stage: 'Group F', date: '2026-06-23' },
-            // Adding more critical matches for knockout
-            { id: 19, home: 'Argentina', away: 'Brazil', stage: 'Round of 16', date: '2026-07-01' },
-            { id: 20, home: 'France', away: 'England', stage: 'Round of 16', date: '2026-07-02' },
-            { id: 21, home: 'Germany', away: 'Netherlands', stage: 'Round of 16', date: '2026-07-03' },
-            { id: 22, home: 'Spain', away: 'Belgium', stage: 'Round of 16', date: '2026-07-04' },
-            { id: 23, home: 'Argentina', away: 'France', stage: 'Quarterfinals', date: '2026-07-09' },
-            { id: 24, home: 'Brazil', away: 'England', stage: 'Quarterfinals', date: '2026-07-10' },
-            { id: 25, home: 'Argentina', away: 'Brazil', stage: 'Semifinals', date: '2026-07-13' },
-            { id: 26, home: 'France', away: 'England', stage: 'Semifinals', date: '2026-07-14' },
-            { id: 27, home: 'Argentina', away: 'France', stage: 'Final', date: '2026-07-19' }
+            // GROUP A - Mexico, South Africa, South Korea, Czech Republic
+            { id: 1, home: 'Mexico', away: 'South Africa', stage: 'Group A', date: '2026-06-11' },
+            { id: 2, home: 'South Korea', away: 'Czech Republic', stage: 'Group A', date: '2026-06-11' },
+            { id: 3, home: 'Mexico', away: 'South Korea', stage: 'Group A', date: '2026-06-18' },
+            { id: 4, home: 'Czech Republic', away: 'South Africa', stage: 'Group A', date: '2026-06-18' },
+            { id: 5, home: 'Czech Republic', away: 'Mexico', stage: 'Group A', date: '2026-06-24' },
+            { id: 6, home: 'South Africa', away: 'South Korea', stage: 'Group A', date: '2026-06-24' },
+            
+            // GROUP B - Canada, Bosnia & Herzegovina, Qatar, Switzerland
+            { id: 7, home: 'Canada', away: 'Bosnia and Herzegovina', stage: 'Group B', date: '2026-06-12' },
+            { id: 8, home: 'Qatar', away: 'Switzerland', stage: 'Group B', date: '2026-06-12' },
+            { id: 9, home: 'Canada', away: 'Qatar', stage: 'Group B', date: '2026-06-18' },
+            { id: 10, home: 'Bosnia and Herzegovina', away: 'Switzerland', stage: 'Group B', date: '2026-06-18' },
+            { id: 11, home: 'Switzerland', away: 'Canada', stage: 'Group B', date: '2026-06-24' },
+            { id: 12, home: 'Bosnia and Herzegovina', away: 'Qatar', stage: 'Group B', date: '2026-06-24' },
+            
+            // GROUP C - Brazil, Morocco, Haiti, Scotland
+            { id: 13, home: 'Brazil', away: 'Morocco', stage: 'Group C', date: '2026-06-13' },
+            { id: 14, home: 'Haiti', away: 'Scotland', stage: 'Group C', date: '2026-06-13' },
+            { id: 15, home: 'Brazil', away: 'Haiti', stage: 'Group C', date: '2026-06-19' },
+            { id: 16, home: 'Morocco', away: 'Scotland', stage: 'Group C', date: '2026-06-19' },
+            { id: 17, home: 'Scotland', away: 'Brazil', stage: 'Group C', date: '2026-06-24' },
+            { id: 18, home: 'Morocco', away: 'Haiti', stage: 'Group C', date: '2026-06-24' },
+            
+            // GROUP D - USA, Paraguay, Australia, Turkey
+            { id: 19, home: 'United States', away: 'Paraguay', stage: 'Group D', date: '2026-06-12' },
+            { id: 20, home: 'Australia', away: 'Turkey', stage: 'Group D', date: '2026-06-12' },
+            { id: 21, home: 'United States', away: 'Australia', stage: 'Group D', date: '2026-06-19' },
+            { id: 22, home: 'Paraguay', away: 'Turkey', stage: 'Group D', date: '2026-06-19' },
+            { id: 23, home: 'Turkey', away: 'United States', stage: 'Group D', date: '2026-06-25' },
+            { id: 24, home: 'Paraguay', away: 'Australia', stage: 'Group D', date: '2026-06-25' },
+            
+            // GROUP E - Germany, Curaçao, Ivory Coast, Ecuador
+            { id: 25, home: 'Germany', away: 'Curaçao', stage: 'Group E', date: '2026-06-14' },
+            { id: 26, home: 'Ivory Coast', away: 'Ecuador', stage: 'Group E', date: '2026-06-14' },
+            { id: 27, home: 'Germany', away: 'Ivory Coast', stage: 'Group E', date: '2026-06-20' },
+            { id: 28, home: 'Curaçao', away: 'Ecuador', stage: 'Group E', date: '2026-06-20' },
+            { id: 29, home: 'Ecuador', away: 'Germany', stage: 'Group E', date: '2026-06-25' },
+            { id: 30, home: 'Ivory Coast', away: 'Curaçao', stage: 'Group E', date: '2026-06-25' },
+            
+            // GROUP F - Netherlands, Japan, Sweden, Tunisia
+            { id: 31, home: 'Netherlands', away: 'Japan', stage: 'Group F', date: '2026-06-14' },
+            { id: 32, home: 'Sweden', away: 'Tunisia', stage: 'Group F', date: '2026-06-14' },
+            { id: 33, home: 'Netherlands', away: 'Sweden', stage: 'Group F', date: '2026-06-20' },
+            { id: 34, home: 'Japan', away: 'Tunisia', stage: 'Group F', date: '2026-06-20' },
+            { id: 35, home: 'Tunisia', away: 'Netherlands', stage: 'Group F', date: '2026-06-26' },
+            { id: 36, home: 'Japan', away: 'Sweden', stage: 'Group F', date: '2026-06-26' },
+            
+            // GROUP G - Belgium, Egypt, Iran, New Zealand
+            { id: 37, home: 'Belgium', away: 'Egypt', stage: 'Group G', date: '2026-06-15' },
+            { id: 38, home: 'Iran', away: 'New Zealand', stage: 'Group G', date: '2026-06-15' },
+            { id: 39, home: 'Belgium', away: 'Iran', stage: 'Group G', date: '2026-06-21' },
+            { id: 40, home: 'Egypt', away: 'New Zealand', stage: 'Group G', date: '2026-06-21' },
+            { id: 41, home: 'New Zealand', away: 'Belgium', stage: 'Group G', date: '2026-06-26' },
+            { id: 42, home: 'Egypt', away: 'Iran', stage: 'Group G', date: '2026-06-26' },
+            
+            // GROUP H - Spain, Cape Verde, Saudi Arabia, Uruguay
+            { id: 43, home: 'Spain', away: 'Cape Verde', stage: 'Group H', date: '2026-06-15' },
+            { id: 44, home: 'Saudi Arabia', away: 'Uruguay', stage: 'Group H', date: '2026-06-15' },
+            { id: 45, home: 'Spain', away: 'Saudi Arabia', stage: 'Group H', date: '2026-06-21' },
+            { id: 46, home: 'Cape Verde', away: 'Uruguay', stage: 'Group H', date: '2026-06-21' },
+            { id: 47, home: 'Uruguay', away: 'Spain', stage: 'Group H', date: '2026-06-26' },
+            { id: 48, home: 'Cape Verde', away: 'Saudi Arabia', stage: 'Group H', date: '2026-06-26' },
+            
+            // GROUP I - France, Senegal, Iraq, Norway
+            { id: 49, home: 'France', away: 'Senegal', stage: 'Group I', date: '2026-06-16' },
+            { id: 50, home: 'Iraq', away: 'Norway', stage: 'Group I', date: '2026-06-16' },
+            { id: 51, home: 'France', away: 'Iraq', stage: 'Group I', date: '2026-06-22' },
+            { id: 52, home: 'Senegal', away: 'Norway', stage: 'Group I', date: '2026-06-22' },
+            { id: 53, home: 'Norway', away: 'France', stage: 'Group I', date: '2026-06-27' },
+            { id: 54, home: 'Senegal', away: 'Iraq', stage: 'Group I', date: '2026-06-27' },
+            
+            // GROUP J - Argentina, Algeria, Austria, Jordan
+            { id: 55, home: 'Argentina', away: 'Algeria', stage: 'Group J', date: '2026-06-16' },
+            { id: 56, home: 'Austria', away: 'Jordan', stage: 'Group J', date: '2026-06-16' },
+            { id: 57, home: 'Argentina', away: 'Austria', stage: 'Group J', date: '2026-06-22' },
+            { id: 58, home: 'Algeria', away: 'Jordan', stage: 'Group J', date: '2026-06-22' },
+            { id: 59, home: 'Jordan', away: 'Argentina', stage: 'Group J', date: '2026-06-27' },
+            { id: 60, home: 'Algeria', away: 'Austria', stage: 'Group J', date: '2026-06-27' },
+            
+            // GROUP K - Portugal, DR Congo, Uzbekistan, Colombia
+            { id: 61, home: 'Portugal', away: 'DR Congo', stage: 'Group K', date: '2026-06-17' },
+            { id: 62, home: 'Uzbekistan', away: 'Colombia', stage: 'Group K', date: '2026-06-17' },
+            { id: 63, home: 'Portugal', away: 'Uzbekistan', stage: 'Group K', date: '2026-06-23' },
+            { id: 64, home: 'DR Congo', away: 'Colombia', stage: 'Group K', date: '2026-06-23' },
+            { id: 65, home: 'Colombia', away: 'Portugal', stage: 'Group K', date: '2026-06-27' },
+            { id: 66, home: 'DR Congo', away: 'Uzbekistan', stage: 'Group K', date: '2026-06-27' },
+            
+            // GROUP L - England, Croatia, Ghana, Panama
+            { id: 67, home: 'England', away: 'Croatia', stage: 'Group L', date: '2026-06-17' },
+            { id: 68, home: 'Ghana', away: 'Panama', stage: 'Group L', date: '2026-06-17' },
+            { id: 69, home: 'England', away: 'Ghana', stage: 'Group L', date: '2026-06-23' },
+            { id: 70, home: 'Croatia', away: 'Panama', stage: 'Group L', date: '2026-06-23' },
+            { id: 71, home: 'Panama', away: 'England', stage: 'Group L', date: '2026-06-27' },
+            { id: 72, home: 'Croatia', away: 'Ghana', stage: 'Group L', date: '2026-06-27' }
         ];
 
-        // Default team statistics (based on FIFA rankings and recent performance)
+        // All 48 teams qualified for 2026 World Cup with realistic stats
         const DEFAULT_TEAM_STATS = {
-            'Argentina': { rating: 1650, goalsPerGame: 1.8, form: 1.15, defensiveStrength: 0.85 },
-            'Brazil': { rating: 1640, goalsPerGame: 1.9, form: 1.12, defensiveStrength: 0.82 },
-            'France': { rating: 1630, goalsPerGame: 1.7, form: 1.10, defensiveStrength: 0.88 },
-            'England': { rating: 1615, goalsPerGame: 1.6, form: 1.08, defensiveStrength: 0.86 },
-            'Germany': { rating: 1605, goalsPerGame: 1.65, form: 1.09, defensiveStrength: 0.87 },
-            'Spain': { rating: 1600, goalsPerGame: 1.55, form: 1.07, defensiveStrength: 0.89 },
-            'Netherlands': { rating: 1595, goalsPerGame: 1.6, form: 1.06, defensiveStrength: 0.85 },
-            'Belgium': { rating: 1585, goalsPerGame: 1.55, form: 1.05, defensiveStrength: 0.84 },
-            'Italy': { rating: 1575, goalsPerGame: 1.5, form: 1.04, defensiveStrength: 0.90 },
-            'Portugal': { rating: 1570, goalsPerGame: 1.58, form: 1.03, defensiveStrength: 0.83 },
-            'Mexico': { rating: 1550, goalsPerGame: 1.45, form: 1.02, defensiveStrength: 0.81 },
-            'Poland': { rating: 1540, goalsPerGame: 1.40, form: 1.01, defensiveStrength: 0.80 },
-            'Denmark': { rating: 1535, goalsPerGame: 1.38, form: 0.99, defensiveStrength: 0.82 },
-            'Serbia': { rating: 1530, goalsPerGame: 1.42, form: 0.98, defensiveStrength: 0.81 },
-            'Austria': { rating: 1525, goalsPerGame: 1.40, form: 0.97, defensiveStrength: 0.80 },
-            'Croatia': { rating: 1520, goalsPerGame: 1.35, form: 0.96, defensiveStrength: 0.79 },
-            'Slovakia': { rating: 1515, goalsPerGame: 1.32, form: 0.95, defensiveStrength: 0.78 },
-            'Ukraine': { rating: 1510, goalsPerGame: 1.38, form: 0.94, defensiveStrength: 0.77 },
-            'Romania': { rating: 1505, goalsPerGame: 1.30, form: 0.93, defensiveStrength: 0.76 },
-            'Peru': { rating: 1495, goalsPerGame: 1.28, form: 0.92, defensiveStrength: 0.75 },
-            'Paraguay': { rating: 1490, goalsPerGame: 1.25, form: 0.91, defensiveStrength: 0.74 },
-            'Canada': { rating: 1485, goalsPerGame: 1.22, form: 0.90, defensiveStrength: 0.73 }
+            // Top tier teams
+            'Argentina': { rating: 1643, goalsPerGame: 1.85, form: 1.18, defensiveStrength: 0.88 },
+            'France': { rating: 1632, goalsPerGame: 1.72, form: 1.12, defensiveStrength: 0.89 },
+            'Spain': { rating: 1625, goalsPerGame: 1.68, form: 1.14, defensiveStrength: 0.90 },
+            'England': { rating: 1618, goalsPerGame: 1.65, form: 1.11, defensiveStrength: 0.87 },
+            'Brazil': { rating: 1655, goalsPerGame: 1.95, form: 1.20, defensiveStrength: 0.85 },
+            'Germany': { rating: 1608, goalsPerGame: 1.70, form: 1.10, defensiveStrength: 0.88 },
+            'Netherlands': { rating: 1602, goalsPerGame: 1.68, form: 1.09, defensiveStrength: 0.86 },
+            'Portugal': { rating: 1595, goalsPerGame: 1.62, form: 1.08, defensiveStrength: 0.85 },
+            
+            // Upper-mid tier
+            'Belgium': { rating: 1588, goalsPerGame: 1.58, form: 1.06, defensiveStrength: 0.84 },
+            'Uruguay': { rating: 1578, goalsPerGame: 1.52, form: 1.05, defensiveStrength: 0.86 },
+            'Croatia': { rating: 1575, goalsPerGame: 1.48, form: 1.04, defensiveStrength: 0.85 },
+            'Switzerland': { rating: 1572, goalsPerGame: 1.45, form: 1.03, defensiveStrength: 0.87 },
+            'Mexico': { rating: 1568, goalsPerGame: 1.55, form: 1.07, defensiveStrength: 0.83 },
+            'Colombia': { rating: 1562, goalsPerGame: 1.50, form: 1.02, defensiveStrength: 0.82 },
+            'Japan': { rating: 1555, goalsPerGame: 1.42, form: 1.00, defensiveStrength: 0.80 },
+            'Austria': { rating: 1548, goalsPerGame: 1.40, form: 0.99, defensiveStrength: 0.81 },
+            
+            // Mid tier
+            'Morocco': { rating: 1540, goalsPerGame: 1.38, form: 0.98, defensiveStrength: 0.84 },
+            'Turkey': { rating: 1535, goalsPerGame: 1.35, form: 0.97, defensiveStrength: 0.80 },
+            'Sweden': { rating: 1530, goalsPerGame: 1.32, form: 0.96, defensiveStrength: 0.82 },
+            'Denmark': { rating: 1525, goalsPerGame: 1.30, form: 0.95, defensiveStrength: 0.83 },
+            'Czech Republic': { rating: 1520, goalsPerGame: 1.28, form: 0.94, defensiveStrength: 0.80 },
+            'Algeria': { rating: 1515, goalsPerGame: 1.25, form: 0.93, defensiveStrength: 0.79 },
+            'Serbia': { rating: 1512, goalsPerGame: 1.32, form: 0.92, defensiveStrength: 0.78 },
+            'Scotland': { rating: 1508, goalsPerGame: 1.28, form: 0.91, defensiveStrength: 0.81 },
+            'Senegal': { rating: 1505, goalsPerGame: 1.32, form: 0.90, defensiveStrength: 0.80 },
+            'Egypt': { rating: 1502, goalsPerGame: 1.25, form: 0.89, defensiveStrength: 0.78 },
+            
+            // Lower-mid tier
+            'Ecuador': { rating: 1495, goalsPerGame: 1.22, form: 0.88, defensiveStrength: 0.77 },
+            'Ghana': { rating: 1490, goalsPerGame: 1.20, form: 0.87, defensiveStrength: 0.76 },
+            'Paraguay': { rating: 1485, goalsPerGame: 1.18, form: 0.86, defensiveStrength: 0.75 },
+            'Tunisia': { rating: 1480, goalsPerGame: 1.15, form: 0.85, defensiveStrength: 0.75 },
+            'Bosnia and Herzegovina': { rating: 1478, goalsPerGame: 1.32, form: 0.85, defensiveStrength: 0.78 },
+            'South Korea': { rating: 1475, goalsPerGame: 1.25, form: 0.84, defensiveStrength: 0.76 },
+            'Canada': { rating: 1470, goalsPerGame: 1.20, form: 0.83, defensiveStrength: 0.74 },
+            'Ivory Coast': { rating: 1465, goalsPerGame: 1.18, form: 0.82, defensiveStrength: 0.75 },
+            'South Africa': { rating: 1460, goalsPerGame: 1.15, form: 0.81, defensiveStrength: 0.74 },
+            
+            // Lower tier
+            'Australia': { rating: 1455, goalsPerGame: 1.12, form: 0.80, defensiveStrength: 0.73 },
+            'Iran': { rating: 1450, goalsPerGame: 1.10, form: 0.79, defensiveStrength: 0.73 },
+            'United States': { rating: 1448, goalsPerGame: 1.25, form: 0.82, defensiveStrength: 0.75 },
+            'Norway': { rating: 1445, goalsPerGame: 1.08, form: 0.78, defensiveStrength: 0.74 },
+            'Iraq': { rating: 1440, goalsPerGame: 1.05, form: 0.77, defensiveStrength: 0.72 },
+            'Panama': { rating: 1435, goalsPerGame: 1.02, form: 0.76, defensiveStrength: 0.70 },
+            'Qatar': { rating: 1430, goalsPerGame: 1.00, form: 0.75, defensiveStrength: 0.71 },
+            'Uzbekistan': { rating: 1425, goalsPerGame: 0.98, form: 0.74, defensiveStrength: 0.70 },
+            'Haiti': { rating: 1415, goalsPerGame: 0.95, form: 0.72, defensiveStrength: 0.68 },
+            'New Zealand': { rating: 1410, goalsPerGame: 0.92, form: 0.71, defensiveStrength: 0.69 },
+            'Cape Verde': { rating: 1405, goalsPerGame: 0.90, form: 0.70, defensiveStrength: 0.67 },
+            'Curaçao': { rating: 1400, goalsPerGame: 0.88, form: 0.69, defensiveStrength: 0.66 },
+            'Saudi Arabia': { rating: 1395, goalsPerGame: 0.85, form: 0.68, defensiveStrength: 0.65 },
+            'Jordan': { rating: 1390, goalsPerGame: 0.82, form: 0.67, defensiveStrength: 0.64 },
+            'DR Congo': { rating: 1385, goalsPerGame: 0.80, form: 0.66, defensiveStrength: 0.63 }
         };
 
         // Default betting odds (will be updated dynamically)
