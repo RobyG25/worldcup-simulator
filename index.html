@@ -602,7 +602,17 @@
         }
 
         async function initializeData() {
-            showLoading(true, 'Fetching real 2026 World Cup data from API...');
+    showLoading(true, 'Loading tournament data...');
+    
+    // Temporarily use fallback while we debug API
+    console.log("Using fallback data for now (API debugging in progress)");
+    tournamentMatches = FALLBACK_MATCHES;
+    teamStats = { ...DEFAULT_TEAM_STATS };
+    
+    updateStatus('✅ Using offline World Cup data with realistic stats.', 'info');
+    showLoading(false);
+    return true;
+}
             
             try {
                 // Fetch 2026 World Cup fixtures
