@@ -242,4 +242,4 @@ Run simulations, analyze predictions, and enjoy the beautiful game! ⚽
 **Tournament:** FIFA World Cup 2026  
 **Matches:** 64  
 **Simulations per Match:** 100  
-**Total Simulations:** 6,400+  
+**Total Simulations:** 6,400+
