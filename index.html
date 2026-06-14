@@ -619,60 +619,92 @@
         }
 
         function displayResults(results) {
+            // Sort results by date
+            const sortedResults = results.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // Group by date
+            const groupedByDate = {};
+            sortedResults.forEach(result => {
+                if (!groupedByDate[result.date]) {
+                    groupedByDate[result.date] = [];
+                }
+                groupedByDate[result.date].push(result);
+            });
+            
             const tbody = document.getElementById('resultsBody');
             tbody.innerHTML = '';
+            
+            const dateOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
 
-            results.forEach(result => {
-                const sim = result.simulation;
-                const homeStats = teamStats[result.home] || DEFAULT_TEAM_STATS[result.home];
-                const awayStats = teamStats[result.away] || DEFAULT_TEAM_STATS[result.away];
-
-                const homeWinProb = parseFloat(sim.wins.home);
-                const drawProb = parseFloat(sim.draws);
-                const awayWinProb = parseFloat(sim.wins.away);
-
-                let prediction = '';
-                let confidence = '';
-                const maxProb = Math.max(homeWinProb, drawProb, awayWinProb);
-
-                if (homeWinProb === maxProb) {
-                    prediction = `${result.home} Win (${homeWinProb}%)`;
-                    confidence = getConfidenceLevel(homeWinProb);
-                } else if (awayWinProb === maxProb) {
-                    prediction = `${result.away} Win (${awayWinProb}%)`;
-                    confidence = getConfidenceLevel(awayWinProb);
-                } else {
-                    prediction = `Draw (${drawProb}%)`;
-                    confidence = getConfidenceLevel(drawProb);
-                }
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><span class="stage">${result.stage}</span></td>
-                    <td><span class="match-name">${result.home} vs ${result.away}</span></td>
-                    <td>
-                        <strong>${result.home}:</strong> Rating ${homeStats.rating}, ${homeStats.goalsPerGame} G/G<br>
-                        <strong>${result.away}:</strong> Rating ${awayStats.rating}, ${awayStats.goalsPerGame} G/G
+            // Process each date
+            Object.keys(groupedByDate).sort().forEach(date => {
+                const dateMatches = groupedByDate[date];
+                const dateObj = new Date(date);
+                const formattedDate = dateObj.toLocaleDateString('en-US', dateOptions);
+                
+                // Add date header row
+                const dateHeaderRow = document.createElement('tr');
+                dateHeaderRow.style.backgroundColor = '#667eea';
+                dateHeaderRow.innerHTML = `
+                    <td colspan="7" style="color: white; font-weight: bold; padding: 12px; text-align: center;">
+                        📅 ${formattedDate}
                     </td>
-                    <td>
-                        <div class="prediction">Avg: ${sim.avgScore.home}-${sim.avgScore.away}</div>
-                        <div class="prediction">Median: ${sim.medianScore.home}-${sim.medianScore.away}</div>
-                        <div class="prediction">Most Likely: ${sim.mostCommonScore}</div>
-                    </td>
-                    <td>${prediction}</td>
-                    <td class="odds">
-                        Home: ${(1 + (1 - homeWinProb/100)).toFixed(2)}<br>
-                        Draw: ${(1 + (1 - drawProb/100)).toFixed(2)}<br>
-                        Away: ${(1 + (1 - awayWinProb/100)).toFixed(2)}
-                    </td>
-                    <td class="confidence ${confidence.class}">${confidence.text}<br><small>(${maxProb}% certainty)</small></td>
                 `;
-                tbody.appendChild(row);
+                tbody.appendChild(dateHeaderRow);
+                
+                // Add matches for this date
+                dateMatches.forEach(result => {
+                    const sim = result.simulation;
+                    const homeStats = teamStats[result.home] || DEFAULT_TEAM_STATS[result.home];
+                    const awayStats = teamStats[result.away] || DEFAULT_TEAM_STATS[result.away];
+
+                    const homeWinProb = parseFloat(sim.wins.home);
+                    const drawProb = parseFloat(sim.draws);
+                    const awayWinProb = parseFloat(sim.wins.away);
+
+                    let prediction = '';
+                    let confidence = '';
+                    const maxProb = Math.max(homeWinProb, drawProb, awayWinProb);
+
+                    if (homeWinProb === maxProb) {
+                        prediction = `${result.home} Win (${homeWinProb}%)`;
+                        confidence = getConfidenceLevel(homeWinProb);
+                    } else if (awayWinProb === maxProb) {
+                        prediction = `${result.away} Win (${awayWinProb}%)`;
+                        confidence = getConfidenceLevel(awayWinProb);
+                    } else {
+                        prediction = `Draw (${drawProb}%)`;
+                        confidence = getConfidenceLevel(drawProb);
+                    }
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><span class="stage">${result.stage}</span></td>
+                        <td><span class="match-name">${result.home} vs ${result.away}</span></td>
+                        <td>
+                            <strong>${result.home}:</strong> Rating ${homeStats.rating}, ${homeStats.goalsPerGame} G/G<br>
+                            <strong>${result.away}:</strong> Rating ${awayStats.rating}, ${awayStats.goalsPerGame} G/G
+                        </td>
+                        <td>
+                            <div class="prediction">Avg: ${sim.avgScore.home}-${sim.avgScore.away}</div>
+                            <div class="prediction">Median: ${sim.medianScore.home}-${sim.medianScore.away}</div>
+                            <div class="prediction">Most Likely: ${sim.mostCommonScore}</div>
+                        </td>
+                        <td>${prediction}</td>
+                        <td class="odds">
+                            Home: ${(1 + (1 - homeWinProb/100)).toFixed(2)}<br>
+                            Draw: ${(1 + (1 - drawProb/100)).toFixed(2)}<br>
+                            Away: ${(1 + (1 - awayWinProb/100)).toFixed(2)}
+                        </td>
+                        <td class="confidence ${confidence.class}">${confidence.text}<br><small>(${maxProb}% certainty)</small></td>
+                    `;
+                    tbody.appendChild(row);
+                });
             });
 
             document.getElementById('resultsTable').style.display = 'table';
             document.getElementById('statsInfo').style.display = 'block';
-            document.getElementById('resultsSummary').textContent = `${results.length} matches simulated. Scroll right to see all data.`;
+            document.getElementById('resultsSummary').textContent = `${results.length} matches simulated. Organized by date.`;
             document.getElementById('scrollNotice').style.display = 'block';
 
             updateStatus(`✅ Simulation Complete! ${results.length} matches analyzed.`, 'success');
