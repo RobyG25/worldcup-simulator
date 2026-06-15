@@ -501,9 +501,8 @@
             const ratio = fifaPoints / 1877.32;
             return {
                 fifaRating: fifaPoints,
-                goalsPerGame: 1.3 + (ratio * 0.8),
-                form: 0.90,
-                defensiveStrength: 0.70 + (ratio * 0.25)
+                goalsPerGame: 1.2 + (ratio * 0.9),
+                defensiveStrength: 0.65 + (ratio * 0.3)
             };
         }
 
@@ -533,13 +532,13 @@
             return Object.keys(matchScores).filter(id => parseInt(id) <= 72).length === 72;
         }
 
-        function calculateFormBoost(team) {
+        function calculateFormFactor(team) {
             const teamMatches = GROUP_STAGE_MATCHES.filter(m => m.home === team || m.away === team);
             const recentMatches = teamMatches.filter(m => matchScores[m.id]).slice(-5);
             
-            if(recentMatches.length === 0) return 0;
+            if(recentMatches.length === 0) return 1.0;
             
-            let wins = 0, draws = 0;
+            let wins = 0, draws = 0, losses = 0;
             recentMatches.forEach(match => {
                 const score = matchScores[match.id];
                 const homeGoals = parseInt(score.home);
@@ -550,11 +549,13 @@
                     wins++;
                 } else if(homeGoals === awayGoals) {
                     draws++;
+                } else {
+                    losses++;
                 }
             });
             
-            const winRate = (wins + (draws * 0.5)) / recentMatches.length;
-            return (winRate * 0.15);
+            const baseFactor = 1.0 + ((wins - losses) * 0.075);
+            return Math.max(0.75, Math.min(1.25, baseFactor));
         }
 
         function updateTeamStatsFromScores() {
@@ -567,11 +568,10 @@
             teamStats = {};
             allTeams.forEach(team => {
                 const baseStats = getTeamStats(team);
-                const formBoost = calculateFormBoost(team);
+                const formFactor = calculateFormFactor(team);
                 teamStats[team] = {
                     rating: baseStats.fifaRating,
-                    goalsPerGame: baseStats.goalsPerGame,
-                    form: Math.min(1.3, Math.max(0.7, baseStats.form + formBoost)),
+                    goalsPerGame: baseStats.goalsPerGame * formFactor,
                     defensiveStrength: baseStats.defensiveStrength
                 };
             });
@@ -700,10 +700,8 @@
             calculateGoals(isHome) {
                 const stats = isHome ? this.homeStats : this.awayStats;
                 const oppStats = isHome ? this.awayStats : this.homeStats;
-                const baseGoals = stats.goalsPerGame * stats.form;
-                const defenseFactor = 1 - (oppStats.defensiveStrength * 0.2);
-                const expectedGoals = baseGoals * defenseFactor;
-                return Math.max(0, Math.round(expectedGoals + (Math.random() * 2 - 0.5)));
+                const expectedGoals = stats.goalsPerGame * (1 - (oppStats.defensiveStrength * 0.15));
+                return Math.max(0, Math.round(expectedGoals + (Math.random() * 2.5 - 1)));
             }
 
             simulate() {
@@ -842,7 +840,7 @@
             document.getElementById('statsInfo').style.display = 'block';
             const groupCount = Object.keys(matchScores).filter(id => parseInt(id) <= 72).length;
             const knockoutCount = Object.keys(knockoutMatches).length;
-            document.getElementById('resultsSummary').textContent = `${results.length} matches. ${groupCount}/72 group scores entered. Real FIFA rankings + Form weighting active. 🚀`;
+            document.getElementById('resultsSummary').textContent = `${results.length} matches. ${groupCount}/72 group scores. Real FIFA rankings + Form weighting active. 🚀`;
         }
 
         function getConfidenceLevel(prob) {
@@ -886,6 +884,7 @@
 
         window.addEventListener('load', () => {
             updateTeamStatsFromScores();
+            runSimulations();
             if(areAllGroupsComplete()) {
                 document.getElementById('knockoutSection').style.display = 'block';
                 buildKnockoutInputs();
