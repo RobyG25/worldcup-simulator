@@ -499,6 +499,9 @@
         function getTeamStats(teamName) {
             const fifaPoints = FIFA_RANKINGS[teamName] || 1500;
             const ratio = fifaPoints / 1877.32;
+            const baseForm = 0.85 + (ratio * 0.35);
+            const fifaPoints = FIFA_RANKINGS[teamName] || 1500;
+            const ratio = fifaPoints / 1877.32;
             return {
                 fifaRating: fifaPoints,
                 goalsPerGame: 1.2 + (ratio * 0.9),
@@ -694,7 +697,9 @@
                 this.homeTeam = homeTeam;
                 this.awayTeam = awayTeam;
                 this.homeStats = teamStats[homeTeam] || getTeamStats(homeTeam);
+                if(!this.homeStats.baseForm) this.homeStats.baseForm = 1.0;
                 this.awayStats = teamStats[awayTeam] || getTeamStats(awayTeam);
+                if(!this.awayStats.baseForm) this.awayStats.baseForm = 1.0;
             }
 
             calculateGoals(isHome) {
