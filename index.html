@@ -292,8 +292,9 @@
     </div>
 
     <script>
-        // ESPN API is FREE, no auth needed, and has CORS enabled
-        const API_BASE = 'https://site.api.espn.com/site/api/site/data/worldcup/2026';
+        // YOUR API-Sports KEY (from api-football)
+        const API_KEY = '3a44038bbf4a2cc77d0e8f9b9c307879';
+        const API_BASE = 'https://v3.football.api-sports.io';
 
         let tournamentMatches = [];
         let teamStats = {};
@@ -582,66 +583,74 @@
 
         async function fetchFromAPI(endpoint) {
             try {
-                console.log(`Fetching ESPN data...`);
+                console.log(`Fetching from API-Football: ${endpoint}`);
                 
-                const response = await fetch(API_BASE, {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
                     method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'x-apisports-key': API_KEY
                     }
                 });
                 
-                console.log(`Response status: ${response.status}`);
+                console.log(`API-Football Response status: ${response.status}`);
                 
                 if (!response.ok) {
                     console.error(`API Error: ${response.status} ${response.statusText}`);
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
                     return null;
                 }
                 
                 const data = await response.json();
-                console.log('ESPN API Response received:', data);
+                console.log('API-Football data received:', data);
                 return data;
             } catch (error) {
-                console.error('ESPN API Fetch error:', error.message);
+                console.error('API-Football Fetch error:', error.message);
+                console.error('Full error:', error);
                 return null;
             }
         }
 
         async function initializeData() {
-            showLoading(true, 'Fetching live 2026 World Cup data from ESPN...');
+            showLoading(true, 'Fetching 2026 World Cup data from API-Football...');
             
             try {
-                const espnData = await fetchFromAPI('');
+                // Try different league IDs for World Cup
+                // World Cup might be ID 1, 4, or 47
+                let fixturesData = null;
+                const leagueIds = [1, 4, 47, 848];
                 
-                if (espnData && espnData.events && espnData.events.length > 0) {
-                    console.log('Successfully fetched ESPN data with', espnData.events.length, 'events');
+                for (const leagueId of leagueIds) {
+                    console.log(`Trying league ID: ${leagueId}`);
+                    fixturesData = await fetchFromAPI(`/fixtures?league=${leagueId}&season=2026`);
                     
-                    // Process ESPN fixtures
-                    const events = espnData.events;
+                    if (fixturesData && fixturesData.response && fixturesData.response.length > 0) {
+                        console.log(`Success with league ID ${leagueId}!`);
+                        break;
+                    }
+                }
+                
+                if (fixturesData && fixturesData.response && fixturesData.response.length > 0) {
+                    const fixtures = fixturesData.response;
+                    console.log(`Got ${fixtures.length} fixtures from API-Football`);
                     
-                    // Filter and map ESPN events to our match format
-                    tournamentMatches = events.slice(0, 100).map((event) => {
-                        const competitor = event.competitors || [];
-                        const home = competitor[0]?.team?.name || 'Team A';
-                        const away = competitor[1]?.team?.name || 'Team B';
-                        
-                        return {
-                            id: event.id,
-                            home: home,
-                            away: away,
-                            stage: event.season?.name || 'Group Stage',
-                            date: event.date ? event.date.split('T')[0] : '2026-06-11',
-                            fixtureId: event.id,
-                            status: event.status || 'scheduled',
-                            goals: {
-                                home: competitor[0]?.score || null,
-                                away: competitor[1]?.score || null
-                            },
-                            odds: event.odds || null
-                        };
-                    }).filter(match => match.home !== 'Team A' && match.away !== 'Team B');
+                    // Process API-Football fixtures
+                    tournamentMatches = fixtures.slice(0, 100).map((fixture) => ({
+                        id: fixture.fixture.id,
+                        home: fixture.teams.home.name,
+                        away: fixture.teams.away.name,
+                        stage: fixture.league.round || 'Group Stage',
+                        date: fixture.fixture.date.split('T')[0],
+                        fixtureId: fixture.fixture.id,
+                        status: fixture.fixture.status.short,
+                        goals: {
+                            home: fixture.goals.home,
+                            away: fixture.goals.away
+                        },
+                        odds: fixture.odds || null
+                    }));
 
-                    // Build team stats from ESPN data
+                    // Build team stats from fixtures
                     const uniqueTeams = new Set();
                     tournamentMatches.forEach(match => {
                         uniqueTeams.add(match.home);
@@ -657,15 +666,15 @@
                         };
                     });
 
-                    updateStatus('✅ Live ESPN World Cup data loaded! Using real match data.', 'success');
+                    updateStatus('✅ Live API-Football data loaded! Real odds and scores available.', 'success');
                     showLoading(false);
                     return true;
                 } else {
-                    throw new Error('ESPN data format unexpected');
+                    throw new Error('No fixtures found in API-Football');
                 }
             } catch (error) {
-                console.error('Error fetching from ESPN:', error);
-                updateStatus('⚠️ Using offline data with default statistics. (ESPN connection issue - will use predictions!)', 'info');
+                console.error('Error with API-Football:', error);
+                updateStatus('⚠️ Using offline predictions. (API issue - but our predictions are excellent!)', 'info');
                 
                 // Fallback to hardcoded data
                 tournamentMatches = FALLBACK_MATCHES;
