@@ -112,6 +112,12 @@
             border: 1px solid #c3e6cb;
         }
 
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
         .score-input-panel {
             background: #f0f4ff;
             border: 2px solid #667eea;
@@ -119,6 +125,8 @@
             padding: 20px;
             margin: 20px 0;
             display: none;
+            max-height: 500px;
+            overflow-y: auto;
         }
 
         .score-input-panel h3 {
@@ -126,9 +134,23 @@
             margin-bottom: 15px;
         }
 
-        .score-entry {
+        .knockout-section {
+            background: #fff3cd;
+            border: 2px dashed #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .knockout-section h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .knockout-entry {
             display: grid;
-            grid-template-columns: 1fr 0.3fr 0.3fr 1fr auto;
+            grid-template-columns: 1fr 0.2fr 1fr auto;
             gap: 10px;
             align-items: center;
             margin-bottom: 10px;
@@ -137,17 +159,50 @@
             border-radius: 6px;
         }
 
-        .score-entry input {
+        .knockout-entry input {
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            font-size: 1em;
+            font-size: 0.9em;
+        }
+
+        .knockout-entry button {
+            padding: 6px 12px;
+            font-size: 0.85em;
+            margin: 0;
+        }
+
+        .date-section-header {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            margin: 15px 0 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .score-entry {
+            display: grid;
+            grid-template-columns: 1fr 0.3fr 0.3fr 1fr auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .score-entry input {
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9em;
             text-align: center;
         }
 
         .score-entry button {
-            padding: 8px 15px;
-            font-size: 0.9em;
+            padding: 6px 12px;
+            font-size: 0.85em;
             margin: 0;
         }
 
@@ -260,12 +315,6 @@
             font-size: 0.8em;
             margin-left: 5px;
         }
-
-        @media (max-width: 1200px) {
-            .results-table { font-size: 0.85em; }
-            .results-table th, .results-table td { padding: 6px 8px; }
-            h1 { font-size: 1.8em; }
-        }
     </style>
 </head>
 <body>
@@ -277,14 +326,21 @@
 
         <div class="controls">
             <button id="simulateBtn">Run 100 Simulations</button>
-            <button id="toggleScoresBtn" style="background: #28a745;">📊 Enter Actual Scores</button>
+            <button id="toggleScoresBtn" style="background: #28a745;">📊 Enter Group Stage Scores</button>
         </div>
 
         <div id="scoreInputPanel" class="score-input-panel">
-            <h3>📝 Enter Match Scores (Update Team Stats)</h3>
+            <h3>📝 Enter Group Stage Scores (72 matches)</h3>
             <div id="scoreEntries"></div>
             <button id="updateScoresBtn" style="margin-top: 15px; background: #28a745;">✅ Update Scores & Re-Run Predictions</button>
             <button id="clearScoresBtn" style="margin-top: 15px; background: #dc3545;">🔄 Clear All Scores</button>
+        </div>
+
+        <div id="knockoutSection" class="knockout-section">
+            <h3>🏆 Knockout Stage - Enter Advancing Teams</h3>
+            <p style="margin-bottom: 15px; color: #856404;"><strong>📌 All 72 group matches entered!</strong> Now fill in the teams that advanced to knockouts. Once complete, predictions will update!</p>
+            <div id="knockoutEntries"></div>
+            <button id="updateKnockoutBtn" style="margin-top: 15px; background: #ffc107; color: #333;">✅ Update Knockout Teams & Re-Run Predictions</button>
         </div>
 
         <div id="loadingContainer" class="loading">
@@ -316,7 +372,7 @@
     </div>
 
     <script>
-        const WORLD_CUP_MATCHES = [
+        const GROUP_STAGE_MATCHES = [
             { id: 1, home: 'Mexico', away: 'South Africa', stage: 'Group A', date: '2026-06-11' },
             { id: 2, home: 'South Korea', away: 'Czech Republic', stage: 'Group A', date: '2026-06-11' },
             { id: 3, home: 'Mexico', away: 'South Korea', stage: 'Group A', date: '2026-06-18' },
@@ -391,6 +447,25 @@
             { id: 72, home: 'Croatia', away: 'Ghana', stage: 'Group L', date: '2026-06-27' }
         ];
 
+        const KNOCKOUT_TEMPLATE = [
+            { id: 73, stage: 'Round of 16', date: '2026-07-01', label: 'Match 1' },
+            { id: 74, stage: 'Round of 16', date: '2026-07-01', label: 'Match 2' },
+            { id: 75, stage: 'Round of 16', date: '2026-07-02', label: 'Match 3' },
+            { id: 76, stage: 'Round of 16', date: '2026-07-02', label: 'Match 4' },
+            { id: 77, stage: 'Round of 16', date: '2026-07-03', label: 'Match 5' },
+            { id: 78, stage: 'Round of 16', date: '2026-07-03', label: 'Match 6' },
+            { id: 79, stage: 'Round of 16', date: '2026-07-04', label: 'Match 7' },
+            { id: 80, stage: 'Round of 16', date: '2026-07-04', label: 'Match 8' },
+            { id: 81, stage: 'Quarterfinals', date: '2026-07-09', label: 'QF1' },
+            { id: 82, stage: 'Quarterfinals', date: '2026-07-09', label: 'QF2' },
+            { id: 83, stage: 'Quarterfinals', date: '2026-07-10', label: 'QF3' },
+            { id: 84, stage: 'Quarterfinals', date: '2026-07-10', label: 'QF4' },
+            { id: 85, stage: 'Semifinals', date: '2026-07-15', label: 'SF1' },
+            { id: 86, stage: 'Semifinals', date: '2026-07-15', label: 'SF2' },
+            { id: 87, stage: 'Third Place', date: '2026-07-18', label: 'Third Place' },
+            { id: 88, stage: 'Final', date: '2026-07-19', label: 'Final' }
+        ];
+
         const BASE_TEAM_STATS = {
             'Brazil': { rating: 1655, goalsPerGame: 1.95, form: 1.20, defensiveStrength: 0.85 },
             'Argentina': { rating: 1643, goalsPerGame: 1.85, form: 1.18, defensiveStrength: 0.88 },
@@ -444,14 +519,37 @@
             'DR Congo': { rating: 1385, goalsPerGame: 0.80, form: 0.66, defensiveStrength: 0.63 }
         };
 
-        let matchScores = {};
+        let matchScores = loadScoresFromStorage();
+        let knockoutMatches = loadKnockoutFromStorage();
         let teamStats = JSON.parse(JSON.stringify(BASE_TEAM_STATS));
+
+        function saveScoresToStorage() {
+            localStorage.setItem('worldcup2026_scores', JSON.stringify(matchScores));
+        }
+
+        function loadScoresFromStorage() {
+            const saved = localStorage.getItem('worldcup2026_scores');
+            return saved ? JSON.parse(saved) : {};
+        }
+
+        function saveKnockoutToStorage() {
+            localStorage.setItem('worldcup2026_knockout', JSON.stringify(knockoutMatches));
+        }
+
+        function loadKnockoutFromStorage() {
+            const saved = localStorage.getItem('worldcup2026_knockout');
+            return saved ? JSON.parse(saved) : {};
+        }
+
+        function areAllGroupsComplete() {
+            return Object.keys(matchScores).filter(id => parseInt(id) <= 72).length === 72;
+        }
 
         function updateTeamStatsFromScores() {
             teamStats = JSON.parse(JSON.stringify(BASE_TEAM_STATS));
             const teamRecords = {};
             
-            WORLD_CUP_MATCHES.forEach(match => {
+            GROUP_STAGE_MATCHES.forEach(match => {
                 if(matchScores[match.id]) {
                     const score = matchScores[match.id];
                     const homeGoals = parseInt(score.home);
@@ -496,16 +594,61 @@
         function buildScoreInputs() {
             const container = document.getElementById('scoreEntries');
             container.innerHTML = '';
+            const sortedMatches = [...GROUP_STAGE_MATCHES].sort((a,b) => new Date(a.date) - new Date(b.date));
+            const dateOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+            let currentDate = '';
             
-            WORLD_CUP_MATCHES.forEach(match => {
+            sortedMatches.forEach(match => {
+                const dateStr = new Date(match.date).toLocaleDateString('en-US', dateOptions);
+                
+                if(dateStr !== currentDate) {
+                    currentDate = dateStr;
+                    const header = document.createElement('div');
+                    header.className = 'date-section-header';
+                    header.textContent = '📅 ' + dateStr;
+                    container.appendChild(header);
+                }
+                
                 const div = document.createElement('div');
                 div.className = 'score-entry';
                 div.innerHTML = `
-                    <input type="text" value="${match.home}" disabled style="background: #f0f0f0;">
+                    <input type="text" value="${match.home}" disabled style="background: #f0f0f0; font-size: 0.85em;">
                     <input type="number" id="score_${match.id}_home" min="0" max="20" placeholder="0" value="${matchScores[match.id]?.home || ''}">
                     <input type="number" id="score_${match.id}_away" min="0" max="20" placeholder="0" value="${matchScores[match.id]?.away || ''}">
-                    <input type="text" value="${match.away}" disabled style="background: #f0f0f0;">
-                    <button onclick="deleteScore(${match.id})">Delete</button>
+                    <input type="text" value="${match.away}" disabled style="background: #f0f0f0; font-size: 0.85em;">
+                    <button onclick="deleteScore(${match.id})">❌</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function buildKnockoutInputs() {
+            const container = document.getElementById('knockoutEntries');
+            container.innerHTML = '';
+            const dateOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+            let currentDate = '';
+            
+            KNOCKOUT_TEMPLATE.forEach(match => {
+                const dateStr = new Date(match.date).toLocaleDateString('en-US', dateOptions);
+                
+                if(dateStr !== currentDate) {
+                    currentDate = dateStr;
+                    const header = document.createElement('div');
+                    header.className = 'date-section-header';
+                    header.textContent = '📅 ' + dateStr;
+                    container.appendChild(header);
+                }
+                
+                const homeTeam = knockoutMatches[match.id]?.home || '';
+                const awayTeam = knockoutMatches[match.id]?.away || '';
+                
+                const div = document.createElement('div');
+                div.className = 'knockout-entry';
+                div.innerHTML = `
+                    <input type="text" id="knockout_${match.id}_home" placeholder="Home Team" value="${homeTeam}">
+                    <span style="text-align: center; font-weight: bold;">vs</span>
+                    <input type="text" id="knockout_${match.id}_away" placeholder="Away Team" value="${awayTeam}">
+                    <small style="color: #666;">${match.stage} ${match.label}</small>
                 `;
                 container.appendChild(div);
             });
@@ -513,24 +656,51 @@
 
         function deleteScore(matchId) {
             delete matchScores[matchId];
+            saveScoresToStorage();
             document.getElementById(`score_${matchId}_home`).value = '';
             document.getElementById(`score_${matchId}_away`).value = '';
         }
 
         function saveAndUpdateScores() {
-            WORLD_CUP_MATCHES.forEach(match => {
+            GROUP_STAGE_MATCHES.forEach(match => {
                 const homeInput = document.getElementById(`score_${match.id}_home`);
                 const awayInput = document.getElementById(`score_${match.id}_away`);
-                if(homeInput.value !== '' || awayInput.value !== '') {
+                if(homeInput && (homeInput.value !== '' || awayInput.value !== '')) {
                     matchScores[match.id] = {
                         home: homeInput.value || 0,
                         away: awayInput.value || 0
                     };
                 }
             });
+            saveScoresToStorage();
+            
+            if(areAllGroupsComplete()) {
+                document.getElementById('knockoutSection').style.display = 'block';
+                buildKnockoutInputs();
+                updateStatus('🏆 All group matches entered! Now fill in knockout teams.', 'info');
+            }
+            
             updateTeamStatsFromScores();
             runSimulations();
             document.getElementById('scoreInputPanel').style.display = 'none';
+        }
+
+        function saveAndUpdateKnockout() {
+            KNOCKOUT_TEMPLATE.forEach(match => {
+                const homeInput = document.getElementById(`knockout_${match.id}_home`);
+                const awayInput = document.getElementById(`knockout_${match.id}_away`);
+                if(homeInput && awayInput && (homeInput.value || awayInput.value)) {
+                    knockoutMatches[match.id] = {
+                        home: homeInput.value,
+                        away: awayInput.value,
+                        stage: match.stage,
+                        date: match.date
+                    };
+                }
+            });
+            saveKnockoutToStorage();
+            runSimulations();
+            updateStatus('✅ Knockout teams updated! Predictions recalculated.', 'success');
         }
 
         class MatchSimulator {
@@ -597,11 +767,28 @@
             }
         }
 
+        function getAllMatches() {
+            const allMatches = [...GROUP_STAGE_MATCHES];
+            KNOCKOUT_TEMPLATE.forEach(ko => {
+                if(knockoutMatches[ko.id] && knockoutMatches[ko.id].home && knockoutMatches[ko.id].away) {
+                    allMatches.push({
+                        id: ko.id,
+                        home: knockoutMatches[ko.id].home,
+                        away: knockoutMatches[ko.id].away,
+                        stage: ko.stage,
+                        date: ko.date
+                    });
+                }
+            });
+            return allMatches;
+        }
+
         function runSimulations() {
             document.getElementById('loadingContainer').style.display = 'block';
             document.getElementById('simulateBtn').disabled = true;
             setTimeout(() => {
-                const results = WORLD_CUP_MATCHES.map(match => {
+                const allMatches = getAllMatches();
+                const results = allMatches.map(match => {
                     const sim = new MatchSimulator(match.home, match.away).run100Simulations();
                     return { ...match, simulation: sim };
                 });
@@ -668,9 +855,9 @@
             });
             document.getElementById('resultsTable').style.display = 'table';
             document.getElementById('statsInfo').style.display = 'block';
-            document.getElementById('resultsSummary').textContent = `${results.length} matches analyzed. ${Object.keys(matchScores).length} actual scores entered. 🏆`;
-            const status = document.getElementById('statusContainer');
-            status.innerHTML = '<div class="status success">✅ Predictions Updated! ' + (Object.keys(matchScores).length > 0 ? '📊 Using ' + Object.keys(matchScores).length + ' real match results for accuracy!' : '') + '</div>';
+            const groupCount = Object.keys(matchScores).filter(id => parseInt(id) <= 72).length;
+            const knockoutCount = Object.keys(knockoutMatches).length;
+            document.getElementById('resultsSummary').textContent = `${results.length} matches analyzed. ${groupCount}/72 group scores + ${knockoutCount} knockout teams entered. 🏆`;
         }
 
         function getConfidenceLevel(prob) {
@@ -679,6 +866,11 @@
             else if(prob >= 45) return { text: '⚖️ Moderate', class: 'medium-confidence' };
             else if(prob >= 30) return { text: '📉 Low', class: 'low-confidence' };
             else return { text: '❓ Very Low', class: 'low-confidence' };
+        }
+
+        function updateStatus(message, type = 'success') {
+            const container = document.getElementById('statusContainer');
+            container.innerHTML = `<div class="status ${type}">${message}</div>`;
         }
 
         document.getElementById('simulateBtn').addEventListener('click', runSimulations);
@@ -692,11 +884,23 @@
             }
         });
         document.getElementById('updateScoresBtn').addEventListener('click', saveAndUpdateScores);
+        document.getElementById('updateKnockoutBtn').addEventListener('click', saveAndUpdateKnockout);
         document.getElementById('clearScoresBtn').addEventListener('click', () => {
-            matchScores = {};
-            buildScoreInputs();
-            updateTeamStatsFromScores();
-            runSimulations();
+            if(confirm('⚠️ Clear ALL scores? This cannot be undone!')) {
+                matchScores = {};
+                saveScoresToStorage();
+                buildScoreInputs();
+                document.getElementById('knockoutSection').style.display = 'none';
+                updateTeamStatsFromScores();
+                runSimulations();
+            }
+        });
+
+        window.addEventListener('load', () => {
+            if(areAllGroupsComplete()) {
+                document.getElementById('knockoutSection').style.display = 'block';
+                buildKnockoutInputs();
+            }
         });
     </script>
 </body>
