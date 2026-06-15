@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
@@ -55,21 +55,18 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 15px 40px;
-            font-size: 1.1em;
+            padding: 12px 30px;
+            font-size: 1em;
             border-radius: 8px;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             font-weight: 600;
+            margin: 0 5px;
         }
 
         button:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        button:active {
-            transform: translateY(0);
         }
 
         button:disabled {
@@ -115,6 +112,45 @@
             border: 1px solid #c3e6cb;
         }
 
+        .score-input-panel {
+            background: #f0f4ff;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .score-input-panel h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .score-entry {
+            display: grid;
+            grid-template-columns: 1fr 0.3fr 0.3fr 1fr auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+        }
+
+        .score-entry input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            text-align: center;
+        }
+
+        .score-entry button {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            margin: 0;
+        }
+
         .stats-container {
             margin-top: 30px;
         }
@@ -132,24 +168,26 @@
             border-collapse: collapse;
             margin-top: 20px;
             background: white;
+            font-size: 0.9em;
         }
 
         .results-table thead {
             background: #667eea;
             color: white;
+            position: sticky;
+            top: 0;
         }
 
         .results-table th {
-            padding: 15px;
+            padding: 12px;
             text-align: left;
             font-weight: 600;
             border: 1px solid #dee2e6;
         }
 
         .results-table td {
-            padding: 12px 15px;
+            padding: 10px 12px;
             border: 1px solid #dee2e6;
-            font-size: 0.95em;
         }
 
         .results-table tbody tr:nth-child(even) {
@@ -168,6 +206,7 @@
         .prediction {
             color: #667eea;
             font-weight: 600;
+            font-size: 0.9em;
         }
 
         .stage {
@@ -176,12 +215,11 @@
             color: white;
             padding: 3px 8px;
             border-radius: 4px;
-            font-size: 0.85em;
-            margin-right: 8px;
+            font-size: 0.8em;
         }
 
         .confidence {
-            font-size: 0.9em;
+            font-size: 0.85em;
             color: #666;
         }
 
@@ -207,17 +245,46 @@
             padding: 12px !important;
             text-align: center !important;
         }
+
+        .actual-result {
+            background: #e8f5e9 !important;
+            border-left: 4px solid #4caf50 !important;
+        }
+
+        .result-badge {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+
+        @media (max-width: 1200px) {
+            .results-table { font-size: 0.85em; }
+            .results-table th, .results-table td { padding: 6px 8px; }
+            h1 { font-size: 1.8em; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>⚽ 2026 FIFA World Cup Simulator</h1>
-            <p class="subtitle">100 Match Simulations & Score Predictions</p>
+            <p class="subtitle">100 Match Simulations + Live Score Updates = Winning Edge 🏆</p>
         </header>
 
         <div class="controls">
             <button id="simulateBtn">Run 100 Simulations</button>
+            <button id="toggleScoresBtn" style="background: #28a745;">📊 Enter Actual Scores</button>
+        </div>
+
+        <div id="scoreInputPanel" class="score-input-panel">
+            <h3>📝 Enter Match Scores (Update Team Stats)</h3>
+            <div id="scoreEntries"></div>
+            <button id="updateScoresBtn" style="margin-top: 15px; background: #28a745;">✅ Update Scores & Re-Run Predictions</button>
+            <button id="clearScoresBtn" style="margin-top: 15px; background: #dc3545;">🔄 Clear All Scores</button>
         </div>
 
         <div id="loadingContainer" class="loading">
@@ -236,7 +303,8 @@
                     <tr>
                         <th>Stage</th>
                         <th>Match</th>
-                        <th>Ratings</th>
+                        <th>Actual Score</th>
+                        <th>Team Ratings</th>
                         <th>Predicted Scores</th>
                         <th>Prediction</th>
                         <th>Confidence</th>
@@ -323,7 +391,7 @@
             { id: 72, home: 'Croatia', away: 'Ghana', stage: 'Group L', date: '2026-06-27' }
         ];
 
-        const TEAM_STATS = {
+        const BASE_TEAM_STATS = {
             'Brazil': { rating: 1655, goalsPerGame: 1.95, form: 1.20, defensiveStrength: 0.85 },
             'Argentina': { rating: 1643, goalsPerGame: 1.85, form: 1.18, defensiveStrength: 0.88 },
             'France': { rating: 1632, goalsPerGame: 1.72, form: 1.12, defensiveStrength: 0.89 },
@@ -376,12 +444,101 @@
             'DR Congo': { rating: 1385, goalsPerGame: 0.80, form: 0.66, defensiveStrength: 0.63 }
         };
 
+        let matchScores = {};
+        let teamStats = JSON.parse(JSON.stringify(BASE_TEAM_STATS));
+
+        function updateTeamStatsFromScores() {
+            teamStats = JSON.parse(JSON.stringify(BASE_TEAM_STATS));
+            const teamRecords = {};
+            
+            WORLD_CUP_MATCHES.forEach(match => {
+                if(matchScores[match.id]) {
+                    const score = matchScores[match.id];
+                    const homeGoals = parseInt(score.home);
+                    const awayGoals = parseInt(score.away);
+                    
+                    if(!teamRecords[match.home]) teamRecords[match.home] = { wins: 0, losses: 0, draws: 0, goalsFor: 0, goalsAgainst: 0, matches: 0 };
+                    if(!teamRecords[match.away]) teamRecords[match.away] = { wins: 0, losses: 0, draws: 0, goalsFor: 0, goalsAgainst: 0, matches: 0 };
+                    
+                    teamRecords[match.home].goalsFor += homeGoals;
+                    teamRecords[match.home].goalsAgainst += awayGoals;
+                    teamRecords[match.away].goalsFor += awayGoals;
+                    teamRecords[match.away].goalsAgainst += homeGoals;
+                    teamRecords[match.home].matches++;
+                    teamRecords[match.away].matches++;
+                    
+                    if(homeGoals > awayGoals) {
+                        teamRecords[match.home].wins++;
+                        teamRecords[match.away].losses++;
+                    } else if(awayGoals > homeGoals) {
+                        teamRecords[match.away].wins++;
+                        teamRecords[match.home].losses++;
+                    } else {
+                        teamRecords[match.home].draws++;
+                        teamRecords[match.away].draws++;
+                    }
+                }
+            });
+            
+            Object.keys(teamRecords).forEach(team => {
+                const record = teamRecords[team];
+                const winRate = (record.wins / record.matches) || 0;
+                const formBoost = 0.85 + (winRate * 0.35);
+                const newGoalsPerGame = record.matches > 0 ? (record.goalsFor / record.matches) : teamStats[team].goalsPerGame;
+                const newDefense = record.matches > 0 ? (1 - (record.goalsAgainst / record.matches) / 2) : teamStats[team].defensiveStrength;
+                
+                teamStats[team].form = Math.max(0.7, Math.min(1.3, formBoost));
+                teamStats[team].goalsPerGame = newGoalsPerGame;
+                teamStats[team].defensiveStrength = Math.max(0.5, Math.min(1, newDefense));
+            });
+        }
+
+        function buildScoreInputs() {
+            const container = document.getElementById('scoreEntries');
+            container.innerHTML = '';
+            
+            WORLD_CUP_MATCHES.forEach(match => {
+                const div = document.createElement('div');
+                div.className = 'score-entry';
+                div.innerHTML = `
+                    <input type="text" value="${match.home}" disabled style="background: #f0f0f0;">
+                    <input type="number" id="score_${match.id}_home" min="0" max="20" placeholder="0" value="${matchScores[match.id]?.home || ''}">
+                    <input type="number" id="score_${match.id}_away" min="0" max="20" placeholder="0" value="${matchScores[match.id]?.away || ''}">
+                    <input type="text" value="${match.away}" disabled style="background: #f0f0f0;">
+                    <button onclick="deleteScore(${match.id})">Delete</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function deleteScore(matchId) {
+            delete matchScores[matchId];
+            document.getElementById(`score_${matchId}_home`).value = '';
+            document.getElementById(`score_${matchId}_away`).value = '';
+        }
+
+        function saveAndUpdateScores() {
+            WORLD_CUP_MATCHES.forEach(match => {
+                const homeInput = document.getElementById(`score_${match.id}_home`);
+                const awayInput = document.getElementById(`score_${match.id}_away`);
+                if(homeInput.value !== '' || awayInput.value !== '') {
+                    matchScores[match.id] = {
+                        home: homeInput.value || 0,
+                        away: awayInput.value || 0
+                    };
+                }
+            });
+            updateTeamStatsFromScores();
+            runSimulations();
+            document.getElementById('scoreInputPanel').style.display = 'none';
+        }
+
         class MatchSimulator {
             constructor(homeTeam, awayTeam) {
                 this.homeTeam = homeTeam;
                 this.awayTeam = awayTeam;
-                this.homeStats = TEAM_STATS[homeTeam] || { rating: 1400, goalsPerGame: 1.2, form: 0.85, defensiveStrength: 0.70 };
-                this.awayStats = TEAM_STATS[awayTeam] || { rating: 1400, goalsPerGame: 1.2, form: 0.85, defensiveStrength: 0.70 };
+                this.homeStats = teamStats[homeTeam] || { rating: 1400, goalsPerGame: 1.2, form: 0.85, defensiveStrength: 0.70 };
+                this.awayStats = teamStats[awayTeam] || { rating: 1400, goalsPerGame: 1.2, form: 0.85, defensiveStrength: 0.70 };
             }
 
             calculateGoals(isHome) {
@@ -400,7 +557,7 @@
 
             run100Simulations() {
                 const results = [];
-                for (let i = 0; i < 100; i++) results.push(this.simulate());
+                for(let i = 0; i < 100; i++) results.push(this.simulate());
                 const homeGoalsArr = results.map(r => r.homeGoals);
                 const awayGoalsArr = results.map(r => r.awayGoals);
                 const scores = results.map(r => `${r.homeGoals}-${r.awayGoals}`);
@@ -468,12 +625,12 @@
                 const dateObj = new Date(date);
                 const formattedDate = dateObj.toLocaleDateString('en-US', dateOptions);
                 const dateHeaderRow = document.createElement('tr');
-                dateHeaderRow.innerHTML = `<td colspan="6" class="date-header">📅 ${formattedDate}</td>`;
+                dateHeaderRow.innerHTML = `<td colspan="7" class="date-header">📅 ${formattedDate}</td>`;
                 tbody.appendChild(dateHeaderRow);
                 groupedByDate[date].forEach(result => {
                     const sim = result.simulation;
-                    const homeStats = TEAM_STATS[result.home] || { rating: 1400 };
-                    const awayStats = TEAM_STATS[result.away] || { rating: 1400 };
+                    const homeStats = teamStats[result.home] || { rating: 1400 };
+                    const awayStats = teamStats[result.away] || { rating: 1400 };
                     const homeWinProb = parseFloat(sim.wins.home);
                     const drawProb = parseFloat(sim.draws);
                     const awayWinProb = parseFloat(sim.wins.away);
@@ -490,9 +647,17 @@
                         confidence = getConfidenceLevel(drawProb);
                     }
                     const row = document.createElement('tr');
+                    let actualScoreHtml = '-';
+                    let rowClass = '';
+                    if(matchScores[result.id]) {
+                        actualScoreHtml = `${matchScores[result.id].home}-${matchScores[result.id].away} <span class="result-badge">✓ Actual</span>`;
+                        rowClass = 'actual-result';
+                    }
+                    row.className = rowClass;
                     row.innerHTML = `
                         <td><span class="stage">${result.stage}</span></td>
                         <td><span class="match-name">${result.home} vs ${result.away}</span></td>
+                        <td>${actualScoreHtml}</td>
                         <td>${homeStats.rating} / ${awayStats.rating}</td>
                         <td><div class="prediction">Avg: ${sim.avgScore.home}-${sim.avgScore.away}</div><div class="prediction">Median: ${sim.medianScore.home}-${sim.medianScore.away}</div><div class="prediction">Most Likely: ${sim.mostCommonScore}</div></td>
                         <td>${prediction}</td>
@@ -503,9 +668,9 @@
             });
             document.getElementById('resultsTable').style.display = 'table';
             document.getElementById('statsInfo').style.display = 'block';
-            document.getElementById('resultsSummary').textContent = `${results.length} matches analyzed. Ready to dominate your office pool! 🏆`;
+            document.getElementById('resultsSummary').textContent = `${results.length} matches analyzed. ${Object.keys(matchScores).length} actual scores entered. 🏆`;
             const status = document.getElementById('statusContainer');
-            status.innerHTML = '<div class="status success">✅ Simulations Complete! All predictions ready.</div>';
+            status.innerHTML = '<div class="status success">✅ Predictions Updated! ' + (Object.keys(matchScores).length > 0 ? '📊 Using ' + Object.keys(matchScores).length + ' real match results for accuracy!' : '') + '</div>';
         }
 
         function getConfidenceLevel(prob) {
@@ -517,6 +682,22 @@
         }
 
         document.getElementById('simulateBtn').addEventListener('click', runSimulations);
+        document.getElementById('toggleScoresBtn').addEventListener('click', () => {
+            const panel = document.getElementById('scoreInputPanel');
+            if(panel.style.display === 'none') {
+                buildScoreInputs();
+                panel.style.display = 'block';
+            } else {
+                panel.style.display = 'none';
+            }
+        });
+        document.getElementById('updateScoresBtn').addEventListener('click', saveAndUpdateScores);
+        document.getElementById('clearScoresBtn').addEventListener('click', () => {
+            matchScores = {};
+            buildScoreInputs();
+            updateTeamStatsFromScores();
+            runSimulations();
+        });
     </script>
 </body>
 </html>
