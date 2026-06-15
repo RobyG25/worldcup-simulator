@@ -72,6 +72,11 @@
             transform: translateY(0);
         }
 
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .loading {
             text-align: center;
             font-size: 1.2em;
@@ -108,18 +113,6 @@
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
-        }
-
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .status.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
         }
 
         .stats-container {
@@ -167,13 +160,6 @@
             background: #e7f0ff;
         }
 
-        .real-odds-cell {
-            background: #fff8dc !important;
-            border: 2px solid #FFD700 !important;
-            font-weight: 600;
-            color: #B8860B;
-        }
-
         .match-name {
             font-weight: 600;
             color: #333;
@@ -182,11 +168,6 @@
         .prediction {
             color: #667eea;
             font-weight: 600;
-        }
-
-        .odds {
-            color: #764ba2;
-            font-family: 'Courier New', monospace;
         }
 
         .stage {
@@ -219,32 +200,12 @@
             font-weight: 600;
         }
 
-        .match-stats {
-            font-size: 0.85em;
-            color: #666;
-            margin-top: 5px;
-        }
-
-        .scroll-notice {
-            text-align: center;
-            color: #666;
-            margin-top: 10px;
-            font-style: italic;
-        }
-
-        @media (max-width: 1200px) {
-            .results-table {
-                font-size: 0.9em;
-            }
-
-            .results-table th,
-            .results-table td {
-                padding: 8px 10px;
-            }
-
-            h1 {
-                font-size: 1.8em;
-            }
+        .date-header {
+            background: #667eea !important;
+            color: white !important;
+            font-weight: bold !important;
+            padding: 12px !important;
+            text-align: center !important;
         }
     </style>
 </head>
@@ -252,7 +213,7 @@
     <div class="container">
         <header>
             <h1>⚽ 2026 FIFA World Cup Simulator</h1>
-            <p class="subtitle">100 Match Simulations with Betting Odds & Predictions</p>
+            <p class="subtitle">100 Match Simulations & Score Predictions</p>
         </header>
 
         <div class="controls">
@@ -261,7 +222,7 @@
 
         <div id="loadingContainer" class="loading">
             <span class="spinner"></span>
-            <span id="loadingText">Fetching tournament data...</span>
+            <span>Running simulations...</span>
         </div>
 
         <div id="statusContainer"></div>
@@ -275,143 +236,102 @@
                     <tr>
                         <th>Stage</th>
                         <th>Match</th>
-                        <th>Team Stats</th>
-                        <th>Predicted Score</th>
+                        <th>Ratings</th>
+                        <th>Predicted Scores</th>
                         <th>Prediction</th>
-                        <th>Our Odds</th>
-                        <th style="background: #FFD700;">🏆 REAL ODDS</th>
                         <th>Confidence</th>
                     </tr>
                 </thead>
                 <tbody id="resultsBody"></tbody>
             </table>
-            <div class="scroll-notice" id="scrollNotice" style="display: none;">
-                💡 Scroll right to see all predictions on smaller screens
-            </div>
         </div>
     </div>
 
     <script>
-        // YOUR API-Sports KEY (from api-football)
-        const API_KEY = '3a44038bbf4a2cc77d0e8f9b9c307879';
-        const API_BASE = 'https://v3.football.api-sports.io';
-
-        let tournamentMatches = [];
-        let teamStats = {};
-        let bettingOdds = {};
-
-        // ACTUAL 2026 FIFA World Cup confirmed groups and matches
-        const FALLBACK_MATCHES = [
-            // GROUP A - Mexico, South Africa, South Korea, Czech Republic
-            { id: 1, home: 'Mexico', away: 'South Africa', stage: 'Group A', date: '2026-06-11', odds: null, goals: { home: null, away: null } },
-            { id: 2, home: 'South Korea', away: 'Czech Republic', stage: 'Group A', date: '2026-06-11', odds: null, goals: { home: null, away: null } },
-            { id: 3, home: 'Mexico', away: 'South Korea', stage: 'Group A', date: '2026-06-18', odds: null, goals: { home: null, away: null } },
-            { id: 4, home: 'Czech Republic', away: 'South Africa', stage: 'Group A', date: '2026-06-18', odds: null, goals: { home: null, away: null } },
-            { id: 5, home: 'Czech Republic', away: 'Mexico', stage: 'Group A', date: '2026-06-24', odds: null, goals: { home: null, away: null } },
-            { id: 6, home: 'South Africa', away: 'South Korea', stage: 'Group A', date: '2026-06-24', odds: null, goals: { home: null, away: null } },
-            
-            // GROUP B - Canada, Bosnia & Herzegovina, Qatar, Switzerland
-            { id: 7, home: 'Canada', away: 'Bosnia and Herzegovina', stage: 'Group B', date: '2026-06-12', odds: null, goals: { home: null, away: null } },
-            { id: 8, home: 'Qatar', away: 'Switzerland', stage: 'Group B', date: '2026-06-12', odds: null, goals: { home: null, away: null } },
-            { id: 9, home: 'Canada', away: 'Qatar', stage: 'Group B', date: '2026-06-18', odds: null, goals: { home: null, away: null } },
-            { id: 10, home: 'Bosnia and Herzegovina', away: 'Switzerland', stage: 'Group B', date: '2026-06-18', odds: null, goals: { home: null, away: null } },
-            { id: 11, home: 'Switzerland', away: 'Canada', stage: 'Group B', date: '2026-06-24', odds: null, goals: { home: null, away: null } },
-            { id: 12, home: 'Bosnia and Herzegovina', away: 'Qatar', stage: 'Group B', date: '2026-06-24', odds: null, goals: { home: null, away: null } },
-            
-            // GROUP C - Brazil, Morocco, Haiti, Scotland
-            { id: 13, home: 'Brazil', away: 'Morocco', stage: 'Group C', date: '2026-06-13', odds: null, goals: { home: null, away: null } },
-            { id: 14, home: 'Haiti', away: 'Scotland', stage: 'Group C', date: '2026-06-13', odds: null, goals: { home: null, away: null } },
-            { id: 15, home: 'Brazil', away: 'Haiti', stage: 'Group C', date: '2026-06-19', odds: null, goals: { home: null, away: null } },
-            { id: 16, home: 'Morocco', away: 'Scotland', stage: 'Group C', date: '2026-06-19', odds: null, goals: { home: null, away: null } },
-            { id: 17, home: 'Scotland', away: 'Brazil', stage: 'Group C', date: '2026-06-24', odds: null, goals: { home: null, away: null } },
-            { id: 18, home: 'Morocco', away: 'Haiti', stage: 'Group C', date: '2026-06-24', odds: null, goals: { home: null, away: null } },
-            
-            // GROUP D - USA, Paraguay, Australia, Turkey
-            { id: 19, home: 'United States', away: 'Paraguay', stage: 'Group D', date: '2026-06-12', odds: null, goals: { home: null, away: null } },
-            { id: 20, home: 'Australia', away: 'Turkey', stage: 'Group D', date: '2026-06-12', odds: null, goals: { home: null, away: null } },
-            { id: 21, home: 'United States', away: 'Australia', stage: 'Group D', date: '2026-06-19', odds: null, goals: { home: null, away: null } },
-            { id: 22, home: 'Paraguay', away: 'Turkey', stage: 'Group D', date: '2026-06-19', odds: null, goals: { home: null, away: null } },
-            { id: 23, home: 'Turkey', away: 'United States', stage: 'Group D', date: '2026-06-25', odds: null, goals: { home: null, away: null } },
-            { id: 24, home: 'Paraguay', away: 'Australia', stage: 'Group D', date: '2026-06-25', odds: null, goals: { home: null, away: null } },
-            
-            // GROUP E - Germany, Curaçao, Ivory Coast, Ecuador
-            { id: 25, home: 'Germany', away: 'Curaçao', stage: 'Group E', date: '2026-06-14', odds: null, goals: { home: null, away: null } },
-            { id: 26, home: 'Ivory Coast', away: 'Ecuador', stage: 'Group E', date: '2026-06-14', odds: null, goals: { home: null, away: null } },
-            { id: 27, home: 'Germany', away: 'Ivory Coast', stage: 'Group E', date: '2026-06-20', odds: null, goals: { home: null, away: null } },
-            { id: 28, home: 'Curaçao', away: 'Ecuador', stage: 'Group E', date: '2026-06-20', odds: null, goals: { home: null, away: null } },
-            { id: 29, home: 'Ecuador', away: 'Germany', stage: 'Group E', date: '2026-06-25', odds: null, goals: { home: null, away: null } },
-            { id: 30, home: 'Ivory Coast', away: 'Curaçao', stage: 'Group E', date: '2026-06-25', odds: null, goals: { home: null, away: null } },
-            
-            // GROUP F - Netherlands, Japan, Sweden, Tunisia
-            { id: 31, home: 'Netherlands', away: 'Japan', stage: 'Group F', date: '2026-06-14', odds: null, goals: { home: null, away: null } },
-            { id: 32, home: 'Sweden', away: 'Tunisia', stage: 'Group F', date: '2026-06-14', odds: null, goals: { home: null, away: null } },
-            { id: 33, home: 'Netherlands', away: 'Sweden', stage: 'Group F', date: '2026-06-20', odds: null, goals: { home: null, away: null } },
-            { id: 34, home: 'Japan', away: 'Tunisia', stage: 'Group F', date: '2026-06-20', odds: null, goals: { home: null, away: null } },
-            { id: 35, home: 'Tunisia', away: 'Netherlands', stage: 'Group F', date: '2026-06-26', odds: null, goals: { home: null, away: null } },
-            { id: 36, home: 'Japan', away: 'Sweden', stage: 'Group F', date: '2026-06-26', odds: null, goals: { home: null, away: null } },
-            
-            // GROUP G - Belgium, Egypt, Iran, New Zealand
-            { id: 37, home: 'Belgium', away: 'Egypt', stage: 'Group G', date: '2026-06-15', odds: null, goals: { home: null, away: null } },
-            { id: 38, home: 'Iran', away: 'New Zealand', stage: 'Group G', date: '2026-06-15', odds: null, goals: { home: null, away: null } },
-            { id: 39, home: 'Belgium', away: 'Iran', stage: 'Group G', date: '2026-06-21', odds: null, goals: { home: null, away: null } },
-            { id: 40, home: 'Egypt', away: 'New Zealand', stage: 'Group G', date: '2026-06-21', odds: null, goals: { home: null, away: null } },
-            { id: 41, home: 'New Zealand', away: 'Belgium', stage: 'Group G', date: '2026-06-26', odds: null, goals: { home: null, away: null } },
-            { id: 42, home: 'Egypt', away: 'Iran', stage: 'Group G', date: '2026-06-26', odds: null, goals: { home: null, away: null } },
-            
-            // GROUP H - Spain, Cape Verde, Saudi Arabia, Uruguay
-            { id: 43, home: 'Spain', away: 'Cape Verde', stage: 'Group H', date: '2026-06-15', odds: null, goals: { home: null, away: null } },
-            { id: 44, home: 'Saudi Arabia', away: 'Uruguay', stage: 'Group H', date: '2026-06-15', odds: null, goals: { home: null, away: null } },
-            { id: 45, home: 'Spain', away: 'Saudi Arabia', stage: 'Group H', date: '2026-06-21', odds: null, goals: { home: null, away: null } },
-            { id: 46, home: 'Cape Verde', away: 'Uruguay', stage: 'Group H', date: '2026-06-21', odds: null, goals: { home: null, away: null } },
-            { id: 47, home: 'Uruguay', away: 'Spain', stage: 'Group H', date: '2026-06-26', odds: null, goals: { home: null, away: null } },
-            { id: 48, home: 'Cape Verde', away: 'Saudi Arabia', stage: 'Group H', date: '2026-06-26', odds: null, goals: { home: null, away: null } },
-            
-            // GROUP I - France, Senegal, Iraq, Norway
-            { id: 49, home: 'France', away: 'Senegal', stage: 'Group I', date: '2026-06-16', odds: null, goals: { home: null, away: null } },
-            { id: 50, home: 'Iraq', away: 'Norway', stage: 'Group I', date: '2026-06-16', odds: null, goals: { home: null, away: null } },
-            { id: 51, home: 'France', away: 'Iraq', stage: 'Group I', date: '2026-06-22', odds: null, goals: { home: null, away: null } },
-            { id: 52, home: 'Senegal', away: 'Norway', stage: 'Group I', date: '2026-06-22', odds: null, goals: { home: null, away: null } },
-            { id: 53, home: 'Norway', away: 'France', stage: 'Group I', date: '2026-06-27', odds: null, goals: { home: null, away: null } },
-            { id: 54, home: 'Senegal', away: 'Iraq', stage: 'Group I', date: '2026-06-27', odds: null, goals: { home: null, away: null } },
-            
-            // GROUP J - Argentina, Algeria, Austria, Jordan
-            { id: 55, home: 'Argentina', away: 'Algeria', stage: 'Group J', date: '2026-06-16', odds: null, goals: { home: null, away: null } },
-            { id: 56, home: 'Austria', away: 'Jordan', stage: 'Group J', date: '2026-06-16', odds: null, goals: { home: null, away: null } },
-            { id: 57, home: 'Argentina', away: 'Austria', stage: 'Group J', date: '2026-06-22', odds: null, goals: { home: null, away: null } },
-            { id: 58, home: 'Algeria', away: 'Jordan', stage: 'Group J', date: '2026-06-22', odds: null, goals: { home: null, away: null } },
-            { id: 59, home: 'Jordan', away: 'Argentina', stage: 'Group J', date: '2026-06-27', odds: null, goals: { home: null, away: null } },
-            { id: 60, home: 'Algeria', away: 'Austria', stage: 'Group J', date: '2026-06-27', odds: null, goals: { home: null, away: null } },
-            
-            // GROUP K - Portugal, DR Congo, Uzbekistan, Colombia
-            { id: 61, home: 'Portugal', away: 'DR Congo', stage: 'Group K', date: '2026-06-17', odds: null, goals: { home: null, away: null } },
-            { id: 62, home: 'Uzbekistan', away: 'Colombia', stage: 'Group K', date: '2026-06-17', odds: null, goals: { home: null, away: null } },
-            { id: 63, home: 'Portugal', away: 'Uzbekistan', stage: 'Group K', date: '2026-06-23', odds: null, goals: { home: null, away: null } },
-            { id: 64, home: 'DR Congo', away: 'Colombia', stage: 'Group K', date: '2026-06-23', odds: null, goals: { home: null, away: null } },
-            { id: 65, home: 'Colombia', away: 'Portugal', stage: 'Group K', date: '2026-06-27', odds: null, goals: { home: null, away: null } },
-            { id: 66, home: 'DR Congo', away: 'Uzbekistan', stage: 'Group K', date: '2026-06-27', odds: null, goals: { home: null, away: null } },
-            
-            // GROUP L - England, Croatia, Ghana, Panama
-            { id: 67, home: 'England', away: 'Croatia', stage: 'Group L', date: '2026-06-17', odds: null, goals: { home: null, away: null } },
-            { id: 68, home: 'Ghana', away: 'Panama', stage: 'Group L', date: '2026-06-17', odds: null, goals: { home: null, away: null } },
-            { id: 69, home: 'England', away: 'Ghana', stage: 'Group L', date: '2026-06-23', odds: null, goals: { home: null, away: null } },
-            { id: 70, home: 'Croatia', away: 'Panama', stage: 'Group L', date: '2026-06-23', odds: null, goals: { home: null, away: null } },
-            { id: 71, home: 'Panama', away: 'England', stage: 'Group L', date: '2026-06-27', odds: null, goals: { home: null, away: null } },
-            { id: 72, home: 'Croatia', away: 'Ghana', stage: 'Group L', date: '2026-06-27', odds: null, goals: { home: null, away: null } }
+        const WORLD_CUP_MATCHES = [
+            { id: 1, home: 'Mexico', away: 'South Africa', stage: 'Group A', date: '2026-06-11' },
+            { id: 2, home: 'South Korea', away: 'Czech Republic', stage: 'Group A', date: '2026-06-11' },
+            { id: 3, home: 'Mexico', away: 'South Korea', stage: 'Group A', date: '2026-06-18' },
+            { id: 4, home: 'Czech Republic', away: 'South Africa', stage: 'Group A', date: '2026-06-18' },
+            { id: 5, home: 'Czech Republic', away: 'Mexico', stage: 'Group A', date: '2026-06-24' },
+            { id: 6, home: 'South Africa', away: 'South Korea', stage: 'Group A', date: '2026-06-24' },
+            { id: 7, home: 'Canada', away: 'Bosnia and Herzegovina', stage: 'Group B', date: '2026-06-12' },
+            { id: 8, home: 'Qatar', away: 'Switzerland', stage: 'Group B', date: '2026-06-12' },
+            { id: 9, home: 'Canada', away: 'Qatar', stage: 'Group B', date: '2026-06-18' },
+            { id: 10, home: 'Bosnia and Herzegovina', away: 'Switzerland', stage: 'Group B', date: '2026-06-18' },
+            { id: 11, home: 'Switzerland', away: 'Canada', stage: 'Group B', date: '2026-06-24' },
+            { id: 12, home: 'Bosnia and Herzegovina', away: 'Qatar', stage: 'Group B', date: '2026-06-24' },
+            { id: 13, home: 'Brazil', away: 'Morocco', stage: 'Group C', date: '2026-06-13' },
+            { id: 14, home: 'Haiti', away: 'Scotland', stage: 'Group C', date: '2026-06-13' },
+            { id: 15, home: 'Brazil', away: 'Haiti', stage: 'Group C', date: '2026-06-19' },
+            { id: 16, home: 'Morocco', away: 'Scotland', stage: 'Group C', date: '2026-06-19' },
+            { id: 17, home: 'Scotland', away: 'Brazil', stage: 'Group C', date: '2026-06-24' },
+            { id: 18, home: 'Morocco', away: 'Haiti', stage: 'Group C', date: '2026-06-24' },
+            { id: 19, home: 'United States', away: 'Paraguay', stage: 'Group D', date: '2026-06-12' },
+            { id: 20, home: 'Australia', away: 'Turkey', stage: 'Group D', date: '2026-06-12' },
+            { id: 21, home: 'United States', away: 'Australia', stage: 'Group D', date: '2026-06-19' },
+            { id: 22, home: 'Paraguay', away: 'Turkey', stage: 'Group D', date: '2026-06-19' },
+            { id: 23, home: 'Turkey', away: 'United States', stage: 'Group D', date: '2026-06-25' },
+            { id: 24, home: 'Paraguay', away: 'Australia', stage: 'Group D', date: '2026-06-25' },
+            { id: 25, home: 'Germany', away: 'Curaçao', stage: 'Group E', date: '2026-06-14' },
+            { id: 26, home: 'Ivory Coast', away: 'Ecuador', stage: 'Group E', date: '2026-06-14' },
+            { id: 27, home: 'Germany', away: 'Ivory Coast', stage: 'Group E', date: '2026-06-20' },
+            { id: 28, home: 'Curaçao', away: 'Ecuador', stage: 'Group E', date: '2026-06-20' },
+            { id: 29, home: 'Ecuador', away: 'Germany', stage: 'Group E', date: '2026-06-25' },
+            { id: 30, home: 'Ivory Coast', away: 'Curaçao', stage: 'Group E', date: '2026-06-25' },
+            { id: 31, home: 'Netherlands', away: 'Japan', stage: 'Group F', date: '2026-06-14' },
+            { id: 32, home: 'Sweden', away: 'Tunisia', stage: 'Group F', date: '2026-06-14' },
+            { id: 33, home: 'Netherlands', away: 'Sweden', stage: 'Group F', date: '2026-06-20' },
+            { id: 34, home: 'Japan', away: 'Tunisia', stage: 'Group F', date: '2026-06-20' },
+            { id: 35, home: 'Tunisia', away: 'Netherlands', stage: 'Group F', date: '2026-06-26' },
+            { id: 36, home: 'Japan', away: 'Sweden', stage: 'Group F', date: '2026-06-26' },
+            { id: 37, home: 'Belgium', away: 'Egypt', stage: 'Group G', date: '2026-06-15' },
+            { id: 38, home: 'Iran', away: 'New Zealand', stage: 'Group G', date: '2026-06-15' },
+            { id: 39, home: 'Belgium', away: 'Iran', stage: 'Group G', date: '2026-06-21' },
+            { id: 40, home: 'Egypt', away: 'New Zealand', stage: 'Group G', date: '2026-06-21' },
+            { id: 41, home: 'New Zealand', away: 'Belgium', stage: 'Group G', date: '2026-06-26' },
+            { id: 42, home: 'Egypt', away: 'Iran', stage: 'Group G', date: '2026-06-26' },
+            { id: 43, home: 'Spain', away: 'Cape Verde', stage: 'Group H', date: '2026-06-15' },
+            { id: 44, home: 'Saudi Arabia', away: 'Uruguay', stage: 'Group H', date: '2026-06-15' },
+            { id: 45, home: 'Spain', away: 'Saudi Arabia', stage: 'Group H', date: '2026-06-21' },
+            { id: 46, home: 'Cape Verde', away: 'Uruguay', stage: 'Group H', date: '2026-06-21' },
+            { id: 47, home: 'Uruguay', away: 'Spain', stage: 'Group H', date: '2026-06-26' },
+            { id: 48, home: 'Cape Verde', away: 'Saudi Arabia', stage: 'Group H', date: '2026-06-26' },
+            { id: 49, home: 'France', away: 'Senegal', stage: 'Group I', date: '2026-06-16' },
+            { id: 50, home: 'Iraq', away: 'Norway', stage: 'Group I', date: '2026-06-16' },
+            { id: 51, home: 'France', away: 'Iraq', stage: 'Group I', date: '2026-06-22' },
+            { id: 52, home: 'Senegal', away: 'Norway', stage: 'Group I', date: '2026-06-22' },
+            { id: 53, home: 'Norway', away: 'France', stage: 'Group I', date: '2026-06-27' },
+            { id: 54, home: 'Senegal', away: 'Iraq', stage: 'Group I', date: '2026-06-27' },
+            { id: 55, home: 'Argentina', away: 'Algeria', stage: 'Group J', date: '2026-06-16' },
+            { id: 56, home: 'Austria', away: 'Jordan', stage: 'Group J', date: '2026-06-16' },
+            { id: 57, home: 'Argentina', away: 'Austria', stage: 'Group J', date: '2026-06-22' },
+            { id: 58, home: 'Algeria', away: 'Jordan', stage: 'Group J', date: '2026-06-22' },
+            { id: 59, home: 'Jordan', away: 'Argentina', stage: 'Group J', date: '2026-06-27' },
+            { id: 60, home: 'Algeria', away: 'Austria', stage: 'Group J', date: '2026-06-27' },
+            { id: 61, home: 'Portugal', away: 'DR Congo', stage: 'Group K', date: '2026-06-17' },
+            { id: 62, home: 'Uzbekistan', away: 'Colombia', stage: 'Group K', date: '2026-06-17' },
+            { id: 63, home: 'Portugal', away: 'Uzbekistan', stage: 'Group K', date: '2026-06-23' },
+            { id: 64, home: 'DR Congo', away: 'Colombia', stage: 'Group K', date: '2026-06-23' },
+            { id: 65, home: 'Colombia', away: 'Portugal', stage: 'Group K', date: '2026-06-27' },
+            { id: 66, home: 'DR Congo', away: 'Uzbekistan', stage: 'Group K', date: '2026-06-27' },
+            { id: 67, home: 'England', away: 'Croatia', stage: 'Group L', date: '2026-06-17' },
+            { id: 68, home: 'Ghana', away: 'Panama', stage: 'Group L', date: '2026-06-17' },
+            { id: 69, home: 'England', away: 'Ghana', stage: 'Group L', date: '2026-06-23' },
+            { id: 70, home: 'Croatia', away: 'Panama', stage: 'Group L', date: '2026-06-23' },
+            { id: 71, home: 'Panama', away: 'England', stage: 'Group L', date: '2026-06-27' },
+            { id: 72, home: 'Croatia', away: 'Ghana', stage: 'Group L', date: '2026-06-27' }
         ];
 
-        // All 48 teams qualified for 2026 World Cup with realistic stats
-        const DEFAULT_TEAM_STATS = {
-            // Top tier teams
+        const TEAM_STATS = {
+            'Brazil': { rating: 1655, goalsPerGame: 1.95, form: 1.20, defensiveStrength: 0.85 },
             'Argentina': { rating: 1643, goalsPerGame: 1.85, form: 1.18, defensiveStrength: 0.88 },
             'France': { rating: 1632, goalsPerGame: 1.72, form: 1.12, defensiveStrength: 0.89 },
-            'Spain': { rating: 1625, goalsPerGame: 1.68, form: 1.14, defensiveStrength: 0.90 },
             'England': { rating: 1618, goalsPerGame: 1.65, form: 1.11, defensiveStrength: 0.87 },
-            'Brazil': { rating: 1655, goalsPerGame: 1.95, form: 1.20, defensiveStrength: 0.85 },
+            'Spain': { rating: 1625, goalsPerGame: 1.68, form: 1.14, defensiveStrength: 0.90 },
             'Germany': { rating: 1608, goalsPerGame: 1.70, form: 1.10, defensiveStrength: 0.88 },
             'Netherlands': { rating: 1602, goalsPerGame: 1.68, form: 1.09, defensiveStrength: 0.86 },
             'Portugal': { rating: 1595, goalsPerGame: 1.62, form: 1.08, defensiveStrength: 0.85 },
-            
-            // Upper-mid tier
             'Belgium': { rating: 1588, goalsPerGame: 1.58, form: 1.06, defensiveStrength: 0.84 },
             'Uruguay': { rating: 1578, goalsPerGame: 1.52, form: 1.05, defensiveStrength: 0.86 },
             'Croatia': { rating: 1575, goalsPerGame: 1.48, form: 1.04, defensiveStrength: 0.85 },
@@ -420,8 +340,6 @@
             'Colombia': { rating: 1562, goalsPerGame: 1.50, form: 1.02, defensiveStrength: 0.82 },
             'Japan': { rating: 1555, goalsPerGame: 1.42, form: 1.00, defensiveStrength: 0.80 },
             'Austria': { rating: 1548, goalsPerGame: 1.40, form: 0.99, defensiveStrength: 0.81 },
-            
-            // Mid tier
             'Morocco': { rating: 1540, goalsPerGame: 1.38, form: 0.98, defensiveStrength: 0.84 },
             'Turkey': { rating: 1535, goalsPerGame: 1.35, form: 0.97, defensiveStrength: 0.80 },
             'Sweden': { rating: 1530, goalsPerGame: 1.32, form: 0.96, defensiveStrength: 0.82 },
@@ -432,8 +350,6 @@
             'Scotland': { rating: 1508, goalsPerGame: 1.28, form: 0.91, defensiveStrength: 0.81 },
             'Senegal': { rating: 1505, goalsPerGame: 1.32, form: 0.90, defensiveStrength: 0.80 },
             'Egypt': { rating: 1502, goalsPerGame: 1.25, form: 0.89, defensiveStrength: 0.78 },
-            
-            // Lower-mid tier
             'Ecuador': { rating: 1495, goalsPerGame: 1.22, form: 0.88, defensiveStrength: 0.77 },
             'Ghana': { rating: 1490, goalsPerGame: 1.20, form: 0.87, defensiveStrength: 0.76 },
             'Paraguay': { rating: 1485, goalsPerGame: 1.18, form: 0.86, defensiveStrength: 0.75 },
@@ -443,8 +359,6 @@
             'Canada': { rating: 1470, goalsPerGame: 1.20, form: 0.83, defensiveStrength: 0.74 },
             'Ivory Coast': { rating: 1465, goalsPerGame: 1.18, form: 0.82, defensiveStrength: 0.75 },
             'South Africa': { rating: 1460, goalsPerGame: 1.15, form: 0.81, defensiveStrength: 0.74 },
-            
-            // Lower tier
             'Australia': { rating: 1455, goalsPerGame: 1.12, form: 0.80, defensiveStrength: 0.73 },
             'Iran': { rating: 1450, goalsPerGame: 1.10, form: 0.79, defensiveStrength: 0.73 },
             'United States': { rating: 1448, goalsPerGame: 1.25, form: 0.82, defensiveStrength: 0.75 },
@@ -462,74 +376,37 @@
             'DR Congo': { rating: 1385, goalsPerGame: 0.80, form: 0.66, defensiveStrength: 0.63 }
         };
 
-        // Default betting odds (will be updated dynamically)
-        const DEFAULT_ODDS = {
-            'Argentina': { win: 2.50, draw: 3.75, loss: 2.00 },
-            'Brazil': { win: 2.55, draw: 3.70, loss: 1.95 },
-            'France': { win: 2.45, draw: 3.80, loss: 2.05 },
-            'England': { win: 2.65, draw: 3.60, loss: 2.15 }
-        };
-
         class MatchSimulator {
-            constructor(homeTeam, awayTeam, homeStats, awayStats) {
+            constructor(homeTeam, awayTeam) {
                 this.homeTeam = homeTeam;
                 this.awayTeam = awayTeam;
-                this.homeStats = homeStats || DEFAULT_TEAM_STATS[homeTeam] || this.createDefaultStats(homeTeam);
-                this.awayStats = awayStats || DEFAULT_TEAM_STATS[awayTeam] || this.createDefaultStats(awayTeam);
-            }
-
-            createDefaultStats(team) {
-                return {
-                    rating: 1400,
-                    goalsPerGame: 1.2,
-                    form: 0.85,
-                    defensiveStrength: 0.70
-                };
+                this.homeStats = TEAM_STATS[homeTeam] || { rating: 1400, goalsPerGame: 1.2, form: 0.85, defensiveStrength: 0.70 };
+                this.awayStats = TEAM_STATS[awayTeam] || { rating: 1400, goalsPerGame: 1.2, form: 0.85, defensiveStrength: 0.70 };
             }
 
             calculateGoals(isHome) {
                 const stats = isHome ? this.homeStats : this.awayStats;
                 const oppStats = isHome ? this.awayStats : this.homeStats;
-
-                // Base goals calculation
                 const baseGoals = stats.goalsPerGame * stats.form;
                 const defenseFactor = 1 - (oppStats.defensiveStrength * 0.2);
                 const homeAdvantage = isHome ? 1.15 : 1.0;
-
                 const expectedGoals = baseGoals * defenseFactor * homeAdvantage;
-
-                // Poisson-like distribution with randomization
-                return Math.round(expectedGoals + (Math.random() * 2 - 0.5));
+                return Math.max(0, Math.round(expectedGoals + (Math.random() * 2 - 0.5)));
             }
 
             simulate() {
-                const homeGoals = Math.max(0, this.calculateGoals(true));
-                const awayGoals = Math.max(0, this.calculateGoals(false));
-
-                return { homeGoals, awayGoals };
+                return { homeGoals: this.calculateGoals(true), awayGoals: this.calculateGoals(false) };
             }
 
             run100Simulations() {
                 const results = [];
-                for (let i = 0; i < 100; i++) {
-                    results.push(this.simulate());
-                }
-
-                // Calculate statistics
-                const scores = results.map(r => `${r.homeGoals}-${r.awayGoals}`);
+                for (let i = 0; i < 100; i++) results.push(this.simulate());
                 const homeGoalsArr = results.map(r => r.homeGoals);
                 const awayGoalsArr = results.map(r => r.awayGoals);
-
+                const scores = results.map(r => `${r.homeGoals}-${r.awayGoals}`);
                 return {
-                    allResults: results,
-                    avgScore: {
-                        home: (homeGoalsArr.reduce((a, b) => a + b, 0) / 100).toFixed(2),
-                        away: (awayGoalsArr.reduce((a, b) => a + b, 0) / 100).toFixed(2)
-                    },
-                    medianScore: {
-                        home: this.getMedian(homeGoalsArr),
-                        away: this.getMedian(awayGoalsArr)
-                    },
+                    avgScore: { home: (homeGoalsArr.reduce((a,b) => a+b, 0)/100).toFixed(2), away: (awayGoalsArr.reduce((a,b) => a+b, 0)/100).toFixed(2) },
+                    medianScore: { home: this.getMedian(homeGoalsArr), away: this.getMedian(awayGoalsArr) },
                     mostCommonScore: this.getMostCommon(scores),
                     wins: this.calculateWins(results),
                     draws: this.calculateDraws(results)
@@ -537,317 +414,109 @@
             }
 
             getMedian(arr) {
-                const sorted = [...arr].sort((a, b) => a - b);
-                const mid = Math.floor(sorted.length / 2);
-                return sorted.length % 2 !== 0 ? sorted[mid] : ((sorted[mid - 1] + sorted[mid]) / 2).toFixed(1);
+                const sorted = [...arr].sort((a,b) => a-b);
+                const mid = Math.floor(sorted.length/2);
+                return sorted.length%2 !== 0 ? sorted[mid] : ((sorted[mid-1]+sorted[mid])/2).toFixed(1);
             }
 
             getMostCommon(arr) {
-                const frequency = {};
-                arr.forEach(item => {
-                    frequency[item] = (frequency[item] || 0) + 1;
-                });
-                return Object.keys(frequency).reduce((a, b) => 
-                    frequency[a] > frequency[b] ? a : b
-                );
+                const freq = {};
+                arr.forEach(item => freq[item] = (freq[item]||0)+1);
+                return Object.keys(freq).reduce((a,b) => freq[a] > freq[b] ? a : b);
             }
 
             calculateWins(results) {
-                let homeWins = 0, awayWins = 0;
+                let home=0, away=0;
                 results.forEach(r => {
-                    if (r.homeGoals > r.awayGoals) homeWins++;
-                    else if (r.awayGoals > r.homeGoals) awayWins++;
+                    if(r.homeGoals > r.awayGoals) home++;
+                    else if(r.awayGoals > r.homeGoals) away++;
                 });
-                return { 
-                    home: ((homeWins / 100) * 100).toFixed(1),
-                    away: ((awayWins / 100) * 100).toFixed(1)
-                };
+                return { home: ((home/100)*100).toFixed(1), away: ((away/100)*100).toFixed(1) };
             }
 
             calculateDraws(results) {
                 const draws = results.filter(r => r.homeGoals === r.awayGoals).length;
-                return ((draws / 100) * 100).toFixed(1);
-            }
-        }
-
-        function updateStatus(message, type = 'info') {
-            const container = document.getElementById('statusContainer');
-            container.innerHTML = `<div class="status ${type}">${message}</div>`;
-        }
-
-        function showLoading(show, text = 'Fetching tournament data...') {
-            const loader = document.getElementById('loadingContainer');
-            document.getElementById('loadingText').textContent = text;
-            loader.style.display = show ? 'block' : 'none';
-        }
-
-        async function fetchFromAPI(endpoint) {
-            try {
-                console.log(`Fetching from API-Football: ${endpoint}`);
-                
-                const response = await fetch(`${API_BASE}${endpoint}`, {
-                    method: 'GET',
-                    headers: {
-                        'x-apisports-key': API_KEY
-                    }
-                });
-                
-                console.log(`API-Football Response status: ${response.status}`);
-                
-                if (!response.ok) {
-                    console.error(`API Error: ${response.status} ${response.statusText}`);
-                    const errorText = await response.text();
-                    console.error('Error response:', errorText);
-                    return null;
-                }
-                
-                const data = await response.json();
-                console.log('API-Football data received:', data);
-                return data;
-            } catch (error) {
-                console.error('API-Football Fetch error:', error.message);
-                console.error('Full error:', error);
-                return null;
-            }
-        }
-
-        async function initializeData() {
-            showLoading(true, 'Fetching 2026 World Cup data from API-Football...');
-            
-            try {
-                // Try different league IDs for World Cup
-                // World Cup might be ID 1, 4, or 47
-                let fixturesData = null;
-                const leagueIds = [1, 4, 47, 848];
-                
-                for (const leagueId of leagueIds) {
-                    console.log(`Trying league ID: ${leagueId}`);
-                    fixturesData = await fetchFromAPI(`/fixtures?league=${leagueId}&season=2026`);
-                    
-                    if (fixturesData && fixturesData.response && fixturesData.response.length > 0) {
-                        console.log(`Success with league ID ${leagueId}!`);
-                        break;
-                    }
-                }
-                
-                if (fixturesData && fixturesData.response && fixturesData.response.length > 0) {
-                    const fixtures = fixturesData.response;
-                    console.log(`Got ${fixtures.length} fixtures from API-Football`);
-                    
-                    // Process API-Football fixtures
-                    tournamentMatches = fixtures.slice(0, 100).map((fixture) => ({
-                        id: fixture.fixture.id,
-                        home: fixture.teams.home.name,
-                        away: fixture.teams.away.name,
-                        stage: fixture.league.round || 'Group Stage',
-                        date: fixture.fixture.date.split('T')[0],
-                        fixtureId: fixture.fixture.id,
-                        status: fixture.fixture.status.short,
-                        goals: {
-                            home: fixture.goals.home,
-                            away: fixture.goals.away
-                        },
-                        odds: fixture.odds || null
-                    }));
-
-                    // Build team stats from fixtures
-                    const uniqueTeams = new Set();
-                    tournamentMatches.forEach(match => {
-                        uniqueTeams.add(match.home);
-                        uniqueTeams.add(match.away);
-                    });
-
-                    uniqueTeams.forEach(team => {
-                        teamStats[team] = DEFAULT_TEAM_STATS[team] || {
-                            rating: 1400 + Math.random() * 200,
-                            goalsPerGame: 1.3 + Math.random() * 0.8,
-                            form: 0.85 + Math.random() * 0.3,
-                            defensiveStrength: 0.70 + Math.random() * 0.2
-                        };
-                    });
-
-                    updateStatus('✅ Live API-Football data loaded! Real odds and scores available.', 'success');
-                    showLoading(false);
-                    return true;
-                } else {
-                    throw new Error('No fixtures found in API-Football');
-                }
-            } catch (error) {
-                console.error('Error with API-Football:', error);
-                updateStatus('⚠️ Using offline predictions. (API issue - but our predictions are excellent!)', 'info');
-                
-                // Fallback to hardcoded data
-                tournamentMatches = FALLBACK_MATCHES;
-                teamStats = { ...DEFAULT_TEAM_STATS };
-                showLoading(false);
-                return true;
+                return ((draws/100)*100).toFixed(1);
             }
         }
 
         function runSimulations() {
-            showLoading(true, 'Running 100 simulations for each match...');
+            document.getElementById('loadingContainer').style.display = 'block';
             document.getElementById('simulateBtn').disabled = true;
-
             setTimeout(() => {
-                const results = [];
-
-                tournamentMatches.forEach(match => {
-                    const simulator = new MatchSimulator(
-                        match.home,
-                        match.away,
-                        teamStats[match.home],
-                        teamStats[match.away]
-                    );
-
-                    const simulation = simulator.run100Simulations();
-                    results.push({
-                        ...match,
-                        simulation: simulation
-                    });
+                const results = WORLD_CUP_MATCHES.map(match => {
+                    const sim = new MatchSimulator(match.home, match.away).run100Simulations();
+                    return { ...match, simulation: sim };
                 });
-
                 displayResults(results);
-                showLoading(false);
+                document.getElementById('loadingContainer').style.display = 'none';
                 document.getElementById('simulateBtn').disabled = false;
-            }, 500);
+            }, 100);
         }
 
         function displayResults(results) {
-            // Sort results by date
-            const sortedResults = results.sort((a, b) => new Date(a.date) - new Date(b.date));
-            
-            // Group by date
+            const sortedResults = results.sort((a,b) => new Date(a.date) - new Date(b.date));
             const groupedByDate = {};
             sortedResults.forEach(result => {
-                if (!groupedByDate[result.date]) {
-                    groupedByDate[result.date] = [];
-                }
+                if(!groupedByDate[result.date]) groupedByDate[result.date] = [];
                 groupedByDate[result.date].push(result);
             });
-            
             const tbody = document.getElementById('resultsBody');
             tbody.innerHTML = '';
-            
             const dateOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
-
-            // Process each date
             Object.keys(groupedByDate).sort().forEach(date => {
-                const dateMatches = groupedByDate[date];
                 const dateObj = new Date(date);
                 const formattedDate = dateObj.toLocaleDateString('en-US', dateOptions);
-                
-                // Add date header row
                 const dateHeaderRow = document.createElement('tr');
-                dateHeaderRow.style.backgroundColor = '#667eea';
-                dateHeaderRow.innerHTML = `
-                    <td colspan="8" style="color: white; font-weight: bold; padding: 12px; text-align: center;">
-                        📅 ${formattedDate}
-                    </td>
-                `;
+                dateHeaderRow.innerHTML = `<td colspan="6" class="date-header">📅 ${formattedDate}</td>`;
                 tbody.appendChild(dateHeaderRow);
-                
-                // Add matches for this date
-                dateMatches.forEach(result => {
+                groupedByDate[date].forEach(result => {
                     const sim = result.simulation;
-                    const homeStats = teamStats[result.home] || DEFAULT_TEAM_STATS[result.home];
-                    const awayStats = teamStats[result.away] || DEFAULT_TEAM_STATS[result.away];
-
+                    const homeStats = TEAM_STATS[result.home] || { rating: 1400 };
+                    const awayStats = TEAM_STATS[result.away] || { rating: 1400 };
                     const homeWinProb = parseFloat(sim.wins.home);
                     const drawProb = parseFloat(sim.draws);
                     const awayWinProb = parseFloat(sim.wins.away);
-
-                    let prediction = '';
-                    let confidence = '';
                     const maxProb = Math.max(homeWinProb, drawProb, awayWinProb);
-
-                    if (homeWinProb === maxProb) {
+                    let prediction = '', confidence = '';
+                    if(homeWinProb === maxProb) {
                         prediction = `${result.home} Win (${homeWinProb}%)`;
                         confidence = getConfidenceLevel(homeWinProb);
-                    } else if (awayWinProb === maxProb) {
+                    } else if(awayWinProb === maxProb) {
                         prediction = `${result.away} Win (${awayWinProb}%)`;
                         confidence = getConfidenceLevel(awayWinProb);
                     } else {
                         prediction = `Draw (${drawProb}%)`;
                         confidence = getConfidenceLevel(drawProb);
                     }
-
-                    // Our calculated odds
-                    const ourOdds = `
-                        <strong>OUR ODDS:</strong><br>
-                        Home: ${(1 + (1 - homeWinProb/100)).toFixed(2)}<br>
-                        Draw: ${(1 + (1 - drawProb/100)).toFixed(2)}<br>
-                        Away: ${(1 + (1 - awayWinProb/100)).toFixed(2)}
-                    `;
-
-                    // Real API odds (if available)
-                    let realOdds = '<strong>REAL ODDS:</strong><br>Fetching...';
-                    if (result.odds) {
-                        realOdds = `
-                            <strong>REAL ODDS:</strong><br>
-                            Home: ${result.odds.home_win?.toFixed(2) || 'N/A'}<br>
-                            Draw: ${result.odds.draw?.toFixed(2) || 'N/A'}<br>
-                            Away: ${result.odds.away_win?.toFixed(2) || 'N/A'}
-                        `;
-                    }
-
-                    // Live score (if match has started)
-                    let liveScore = '';
-                    if (result.goals.home !== null && result.goals.away !== null) {
-                        liveScore = `<span style="color: #28a745; font-weight: bold;">LIVE: ${result.goals.home}-${result.goals.away}</span><br>`;
-                    }
-
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td><span class="stage">${result.stage}</span></td>
                         <td><span class="match-name">${result.home} vs ${result.away}</span></td>
-                        <td>
-                            ${liveScore}
-                            <strong>${result.home}:</strong> ${homeStats.rating.toFixed(0)}<br>
-                            <strong>${result.away}:</strong> ${awayStats.rating.toFixed(0)}
-                        </td>
-                        <td>
-                            <div class="prediction">Avg: ${sim.avgScore.home}-${sim.avgScore.away}</div>
-                            <div class="prediction">Median: ${sim.medianScore.home}-${sim.medianScore.away}</div>
-                            <div class="prediction">Most Likely: ${sim.mostCommonScore}</div>
-                        </td>
+                        <td>${homeStats.rating} / ${awayStats.rating}</td>
+                        <td><div class="prediction">Avg: ${sim.avgScore.home}-${sim.avgScore.away}</div><div class="prediction">Median: ${sim.medianScore.home}-${sim.medianScore.away}</div><div class="prediction">Most Likely: ${sim.mostCommonScore}</div></td>
                         <td>${prediction}</td>
-                        <td class="odds">${ourOdds}</td>
-                        <td class="odds" style="background: #fff8dc; border: 2px solid #FFD700;">${realOdds}</td>
                         <td class="confidence ${confidence.class}">${confidence.text}<br><small>(${maxProb}% certainty)</small></td>
                     `;
                     tbody.appendChild(row);
                 });
             });
-
             document.getElementById('resultsTable').style.display = 'table';
             document.getElementById('statsInfo').style.display = 'block';
-            document.getElementById('resultsSummary').textContent = `${results.length} matches analyzed with REAL betting odds! 💰`;
-            document.getElementById('scrollNotice').style.display = 'block';
-
-            updateStatus(`✅ Simulation Complete! ${results.length} matches with REAL bookmaker odds loaded.`, 'success');
+            document.getElementById('resultsSummary').textContent = `${results.length} matches analyzed. Ready to dominate your office pool! 🏆`;
+            const status = document.getElementById('statusContainer');
+            status.innerHTML = '<div class="status success">✅ Simulations Complete! All predictions ready.</div>';
         }
 
-        function getConfidenceLevel(probability) {
-            if (probability >= 70) {
-                return { text: '🔥 Very High', class: 'high-confidence' };
-            } else if (probability >= 55) {
-                return { text: '📈 High', class: 'high-confidence' };
-            } else if (probability >= 45) {
-                return { text: '⚖️ Moderate', class: 'medium-confidence' };
-            } else if (probability >= 30) {
-                return { text: '📉 Low', class: 'low-confidence' };
-            } else {
-                return { text: '❓ Very Low', class: 'low-confidence' };
-            }
+        function getConfidenceLevel(prob) {
+            if(prob >= 70) return { text: '🔥 Very High', class: 'high-confidence' };
+            else if(prob >= 55) return { text: '📈 High', class: 'high-confidence' };
+            else if(prob >= 45) return { text: '⚖️ Moderate', class: 'medium-confidence' };
+            else if(prob >= 30) return { text: '📉 Low', class: 'low-confidence' };
+            else return { text: '❓ Very Low', class: 'low-confidence' };
         }
 
-        // Event listeners
         document.getElementById('simulateBtn').addEventListener('click', runSimulations);
-
-        // Initialize on page load
-        window.addEventListener('load', async () => {
-            await initializeData();
-        });
     </script>
 </body>
 </html>
